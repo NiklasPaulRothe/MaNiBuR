@@ -5,7 +5,7 @@
 
 struct node {
 	struct node *next;
-	double val;
+	int val;
 };
 
 struct list {
@@ -13,10 +13,8 @@ struct list {
 	struct node *last;
 };
 
-struct list Liste;
-
-struct list * addNode(struct list *inList, double inValue)
-{	
+struct list * addNode(struct list *inList, int inValue)
+{
 	if (inList->first == NULL) {
 		struct node *NodeBuff;
 		NodeBuff = malloc(sizeof(struct node));
@@ -50,7 +48,7 @@ int printList(struct list *inList) {
 
 	printf("\n You inserted following numbers: \n");
 	while (Counter != NULL) {
-		printf("%f ", Counter->val);
+		printf("%i ", Counter->val);
 		Counter = Counter->next;
 	}
 	printf("\n printing finished! \n");
@@ -71,8 +69,59 @@ int clearList(struct list *inList) {
 
 }
 
+int getListLength(struct list *inList) {
+	struct node *temp;
+	temp = inList->first;
+	int count;
+	count = 0;
+	while (temp != NULL) {
+		count++;
+		temp = temp->next;
+	}
+	printf("Anzahl der Elemente in der Liste: %i \n", count);
+	return count;
+}
+
+/*struct list* split(struct list *inList, int length) {
+	if (1 == length) {
+		printf("split if\n");
+		return inList;
+	} else {
+		printf("split else 1\n");
+		struct list *secHalf;
+		struct node *nFirst, *nLast;
+
+		printf("split else 2\n");
+		nFirst = inList->first;
+		printf("split else 3\n");
+		nLast = secHalf->last;
+		printf("split else 4\n");
+		int newlength, i;
+		printf("split else 5\n");
+		newlength = length / 2;
+		printf("split else 6\n");
+		for (i = 1; i < newlength; i++) {
+			printf("split else for 1\n");
+			nFirst = nFirst->next;
+			printf("split else for 2\n");
+		}
+		secHalf->first = nFirst;
+		secHalf->last = nLast;
+	}
+}
+
+int mergesort(struct list *inList) {
+	int listLength;
+	printf("mergesort 1\n");
+	listLength = getListLength(inList);
+	printf("mergesort 2\n");
+	split(inList, listLength);
+	printf("mergesort 3\n");
+}*/
+
+
 int main(int argc, char **argv)
-{	
+{
 	printf("\n");
 
 	int i, j;
@@ -81,15 +130,19 @@ int main(int argc, char **argv)
 	ListBuff = malloc(sizeof(struct list));
 
 	for (i = 1; i < argc; i++)
-	{	
-		//printf("%s\n", "main for 1");		
-		addNode(ListBuff, atof(argv[i]));
+	{
+		//printf("%s\n", "main for 1");
+		addNode(ListBuff, atoi(argv[i]));
 		//printf("%s\n", "main for 2");
 	}
 	printList(ListBuff);
+
+	mergesort(ListBuff);
 
 	clearList(ListBuff);
 
 	printf("\nProgram finished!\n");
 }
 
+// ToDo- Bei dem addNode in der for schleife der Main muss noch eine Abfrage,
+// ob der übergebene wert ein int ist
