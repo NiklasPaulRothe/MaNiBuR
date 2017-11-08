@@ -1,0 +1,124 @@
+Aufgabe 1;
+
+a) 11 Fehler gefunden
+
+
+// #include <stdio.h> - <> anstatt ""
+#include "stdio.h"
+
+// Semicolon darf hier nicht stehen. define ist eine Textersetzung und das semicolon würde fehler beim einsetzen hervorrufen.
+#define CURRENT_YEAR 2015;
+// Selbiges wie aus der Zeile zuvor
+#define MAX_YEAR 2500;
+
+
+int main(int argc, char **argv){
+
+
+    // year kann nicht in der for schleife definiert werden. Lösung: int year; for(year = 0;...
+    // MAX_YEAR Rechtschreibfehler
+    for(int year=0; year < MAX_YAER; year++){
+
+        // == anstatt =. Das einfache = würde year neu zuweisen anstatt einen Vergleich durchzuführen
+        // Semicolon muss entfernt werden. if-Body {} um printIt(year);
+        if( year = CURRENT_YEAR );
+            printIt(year);
+
+        // else-body {} um printf(...) fehlt.
+        else
+            // semicolon hinter printf(...) fehlt
+            printf("passed the year %d...", year)
+    }
+
+// Methode sollte vor der Main Methode stehen.
+// int anstatt Int beim rückgabewert.
+Int printIt(int year){
+    printf("The current year is: %d", year);
+}
+
+
+
+
+
+
+b) 4 Fehler
+//#include <stdio.h> fehlt. printf verursacht warning.
+int main(int argc, char **argv){
+
+
+    // Initialisierung der Variable value fehlt.
+    int value;
+    do{
+        value++;
+        printf("current value: %d", value);
+
+
+    // Semicolon hinter while(...) fehlt
+    // Anstatt !(value==10) wäre value!=10 besser zu lesen.
+    }while(!(value==10) || !(value==20))
+    //now our value equals 10
+    return 0;
+}
+
+
+
+
+
+
+c) 6? Fehler
+
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+
+//input: single text argument
+//output: text argument printed backwards
+int main(int argc, char **argv){
+    // argv[0] würde namen des programms zurückgeben und nicht das erste string argument
+    // hier war wohl malloc(strlen(argv[1] * sizeof(char)) gemeint um einen buffer auf einen string zu bekommen
+    char* buff = malloc(strlen(argv[0]));
+    int i;
+    //sizeof braucht einen datentypen. hier muss aber strlen(argv[1]) anstatt sizeof(...) hin um die länge des ersten arguments zu bekommen
+    for(i=sizeof(argv[0]); i>=0; i--){
+        // auch hier argv[1][i]
+        // iwas mit der buff zählweise und rechnen mit pointern
+        *buff++ = argv[0][i];
+    }
+    //buffer zeigt nicht auf das erste element des auszugebenen strings sondern auf das letzte. Lösung wäre ein 2. Pointer der am anfang von buff geklont wird
+    // und dann für die pointer berechnungen aus den zeilen zuvor genutzt wird. dann zeigt buff immernoch auf den anfang des strings
+    printf("%s\n", buff);
+    // nur durch den 2. pointer aus der zeile drüber ist diese zeile korrekt
+    free(buff);
+    return 0;
+}
+
+
+
+
+
+
+d)
+#include <stdio.h>
+
+// rückgabe für array ist int* anstatt int[]
+// int vector[] - eckige klammern hinter den variablen namen und nicht dem typen
+int[] times(int[] vector, int times){
+    int i;
+    // for schleife würde durch sizeof vector zu weit laufen. der wert müsste noch durch size of int geteilt werden um die anzahl der elemente zu bekommen
+    for(i=0; i<sizeof(vector); i++){
+        vector[i] *= times;
+    }
+    return vector;
+}
+
+int main(int argc, char **argv){
+    //auch hier int v[4]
+    //v soll vermutlich vector heißen
+    int[4] v = {1,1,1,1};
+    vector = times(vector, 2);
+    // auch hier wird mit v wohl vector gemeint sein
+    printf("(%d,%d,%d,%d)", v[1],v[2],v[3],v[4]);
+    return 0;
+}
