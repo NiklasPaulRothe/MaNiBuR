@@ -122,3 +122,78 @@ int main(int argc, char **argv){
     printf("(%d,%d,%d,%d)", v[1],v[2],v[3],v[4]);
     return 0;
 }
+
+
+Aufgabe2:
+a)
+b)
+c)
+Der Aufruf gets() List solange ein, bis entweder EoF oder newline Eintritt.
+Evtl. ist der String der eingelesen wird allerdings länger als die 64 Einträge,
+die das Char Array zur Verfügung stellt.
+d)
+e)
+f)
+g)
+h)
+i)
+j)
+
+
+Aufgabe 3:
+a) $ ps -e | grep foo
+ps -e gibt eine Liste aller Prozesse aus die gerade laufen. Mit dem Zusatz grep
+foo werden diese nach foo gefiltert. Man bekommt also alle Prozesse ausgegeben,
+die foo im Namen tragen.
+
+b) $ kill -9 3492
+Killed (Beendet) den Prozess mit der Nummer 3492 sofort.
+
+c) $ find . -name datei
+Sucht im aktuellen Verzeichnis(signalisiert durch den Punkt) und den Unterverzeichnissen nach einer Datei oder einem Ordner mit dem Namen "datei".
+
+d) $ top -n 10 -u root
+top ist eine Art Taskmanager. Es zeigt die aktuell Laufenden Prozesse an und aktualisiert
+sich dauerhaft automatisch. -u root beschränkt die angezeigten Prozesse auf den Nutzer
+root.
+Unsicher: Mit -n 10 läuft top nur bis man 10 mal refreshed hat?
+
+e) $ cat -n test.txt
+Zeigt die Datei test.txt auf der Commandozeile. -n Gibt Zeilenangaben vor jeder Zeile an
+
+f) $ sudo chmod 734 HelloWorld
+chmod ändert die Lese und Schreib Berechtigungen der Datei HelloWorld.
+734 steht dabei für die Rechte die zugeilt werden sollen.
+7 steht für rwx was bedeutet der Nutzer kann die Datei lesen, schreiben und ausführen.
+3 steht für wx. Die Gruppe hat Schreib und Ausführrechte.
+4 steht nur für w. Jede Person kann diese Person lesen.
+sudo ist ein vorgeschaltetes Programm mit dem es möglich ist Programme als ein anderer
+Nutzer auszuführen der zB mehr Rechte besitzt.
+
+g) $ diff -q hello.txt bye.txt
+Vergleicht beide Dateien und gibt an ob sie sich unterscheiden oder gleich sind.
+Ohne das -q gibt es beide Dateien auf der Kommando Zeile aus.
+
+h) $ tar cjvf foobar.tar.bz2 foobar
+Tar comprimiert die Datei foobar zu foobar.tar.bz2
+c wird mitgegeben um zu sagen das ein Archiv erstellt werden soll.
+Durch j wird das bzip2 Verfahren genutzt.
+v Gibt nochmal alle komprimierten Dateien auf der Kommandozeile aus.
+f wird benötigt um den Dateinamen der Zieldatei mitzugeben.
+
+
+i) $ du -hs .
+du listet alle Dateien auf die sich im Verzeichnis (hier . Also da wo man sich befindet)
+befinden mit ihren Größen auf. Durch -h werden die Dateigrößen in für Menschen lesbar
+dargestellt (MB, KB etc.) und durch -s wird nur angezeigt wie viel Platz alle Dateien
+zusammen einnehmen.
+
+j) $ wget https://www.kernel.org/pub/linux/kernel/v4.x/linux-\
+4.0.tar.xz; tar xJf linux-4.0.tar.xz; grep -R --\
+include=*.[hcS] ' fuck\| shit' linux-4.0 | wc -l
+Dieser Command besteht aus 3 Teilen.
+1. wget downloadet die Datei des angegebenen Links.
+2. tar linux-4.0.tar.xz entpackt diese dann.
+3. grep durchsucht Archiv dann Rekursiv und mit alles symbolic links also Verknüpfungen nach
+Dateien die die Dateiendung h, c oder S haben. Danach sucht es in den Dateien nach den
+Wörtern 'fuck' und 'shit' und zählt mit wc -l die Zeilen in denen die Wörter vorkommen.
