@@ -51,12 +51,12 @@ int printList(struct list *inList) {
 	struct node *Counter;
 	Counter = inList->first;
 
-	printf("\n You inserted following numbers: \n");
+	//printf("\n You inserted following numbers: \n");
 	while (Counter != NULL) {
 		printf("%i ", Counter->val);
 		Counter = Counter->next;
 	}
-	printf("\n printing finished! \n");
+	//printf("\n printing finished! \n");
 
 }
 
@@ -88,42 +88,84 @@ int getListLength(struct list *inList) {
 	return count;
 }
 
-/*struct list* split(struct list *inList, int length) {
-	if (1 == length) {
-		printf("split if\n");
-		return inList;
-	} else {
-		printf("split else 1\n");
-		struct list *secHalf;
-		struct node *nFirst, *nLast;
-		
-		printf("split else 2\n");
-		nFirst = inList->first;
-		printf("split else 3\n");
-		nLast = secHalf->last;
-		printf("split else 4\n");
-		int newlength, i;
-		printf("split else 5\n");
-		newlength = length / 2;
-		printf("split else 6\n");
-		for (i = 1; i < newlength; i++) {
-			printf("split else for 1\n");
-			nFirst = nFirst->next;
-			printf("split else for 2\n");
-		}
-		secHalf->first = nFirst;
-		secHalf->last = nLast;
-	}
-}
+struct list * mergesort(struct list *inList) {
+	int listLength, i;
+	struct list *tmp_list, *finalList;
+	tmp_list = malloc(sizeof(struct list));
+	*tmp_list = *inList;
+	
 
-int mergesort(struct list *inList) {
-	int listLength;
-	printf("mergesort 1\n");
+	//printf("mergesort 1\n");
 	listLength = getListLength(inList);
+
+	if (listLength > 1) {
+
+		printf("split ");
+		printList(inList);
+		printf(" into ");
+
+		for (i = 0; i < (listLength/2); i++) {
+			//printf("length: %i \n", listLength);
+			
+			if (i + 2 >= (listLength / 2)) {
+				//printf("mergesort 1.5\n");
+				tmp_list->last = inList->last;
+				inList->last = tmp_list->first;
+			}
+
+		tmp_list->first = tmp_list->first->next;
+		
+		}
+		inList->last->next = NULL;
+		//printf("last: %i \n", tmp_list->last->val);
+		//printf("first: %i \n", tmp_list->first->val);
+		//printf("length: %i \n", getListLength(tmp_list));
+
+		printList(inList);
+		printf(" and ");
+		printList(tmp_list);
+		printf("\n");
+		inList = mergesort(inList);
+		printf("length: %i", getListLength(tmp_list));
+		tmp_list = mergesort (tmp_list);
+		printf("test");
+	} else {
+		printList(inList);
+		printf("mergesort break\n");
+		return inList;
+	}
+
+	finalList = malloc(sizeof(struct list));
+
+	while (!(tmp_list->first == NULL && inList->first == NULL)) {
+		if (inList->first != NULL && inList->first->val <= tmp_list->first->val) {
+			if (finalList->last == NULL) {
+				finalList->first = inList->first;
+			}
+
+			finalList->last->next = inList->first;
+			finalList->last = inList->first;
+			inList->first = inList->first->next;
+			finalList->last->next == NULL;
+			
+		} else if (tmp_list->first != NULL && tmp_list->first->val <= inList->first->val) {
+			if (finalList->last == NULL) {
+				finalList->first = tmp_list->first;
+			}
+
+			finalList->last->next = tmp_list->first;
+			finalList->last = tmp_list->first;
+			inList->first = tmp_list->first->next;
+			finalList->last->next == NULL;
+		}
+	}
+	inList->first = finalList->first;
+	inList->last = finalList->last;
+	free(finalList);
+	free(tmp_list);
 	printf("mergesort 2\n");
-	split(inList, listLength);
-	printf("mergesort 3\n");
-}*/
+	return inList;
+}
 
 // Testet ob der char eine einzelne Zahl ist oder nicht
 int isDigit(char toTest) {
@@ -179,7 +221,7 @@ int main(int argc, char **argv)
 		}
 		printList(ListBuff);
 
-		//mergesort(ListBuff);
+		mergesort(ListBuff);
 
 		clearList(ListBuff);
 
