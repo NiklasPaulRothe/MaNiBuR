@@ -84,87 +84,116 @@ int getListLength(struct list *inList) {
 		count++;
 		temp = temp->next;
 	}
-	printf("Anzahl der Elemente in der Liste: %i \n", count);
 	return count;
 }
 
+//Nimmt eine Liste und sortiert diese mit Hilfe des mergesort Algorithmus
 struct list * mergesort(struct list *inList) {
+	//Initialisiere nötige Variablen
 	int listLength, i;
 	struct list *tmp_list, *finalList;
 	tmp_list = malloc(sizeof(struct list));
-	*tmp_list = *inList;
-	
-
-	//printf("mergesort 1\n");
+	tmp_list->first = inList->first;
+	tmp_list->last = inList->last;
 	listLength = getListLength(inList);
 
-	if (listLength > 1) {
+	printf("Mergesort: ");
+	printList(inList);
+	printf("\n");
 
+	//Wenn die Liste mehr als ein Element enthält, Liste aufsplitten
+	if (listLength > 1) {
+		
 		printf("split ");
 		printList(inList);
 		printf(" into ");
 
-		for (i = 0; i < (listLength/2); i++) {
-			//printf("length: %i \n", listLength);
-			
+		//Eine Hälfte der Elemente in eine neue Liste schreiben
+		for (i = 0; i < (listLength/2); i++) {	
+
 			if (i + 2 >= (listLength / 2)) {
-				//printf("mergesort 1.5\n");
-				tmp_list->last = inList->last;
 				inList->last = tmp_list->first;
 			}
 
 		tmp_list->first = tmp_list->first->next;
-		
 		}
+
+		//setze die Enden beider Listen auf NULL
 		inList->last->next = NULL;
-		//printf("last: %i \n", tmp_list->last->val);
-		//printf("first: %i \n", tmp_list->first->val);
-		//printf("length: %i \n", getListLength(tmp_list));
+		tmp_list->last->next = NULL;
 
 		printList(inList);
 		printf(" and ");
 		printList(tmp_list);
 		printf("\n");
+
+		//rekursiver Aufruf von mergesort für beide Listen.
 		inList = mergesort(inList);
-		printf("length: %i", getListLength(tmp_list));
-		tmp_list = mergesort (tmp_list);
-		printf("test");
+		tmp_list = mergesort(tmp_list);
+
+	//Hat die Liste nur ein Element wird die Rekursion abgebrochen.
 	} else {
-		printList(inList);
-		printf("mergesort break\n");
+		free(tmp_list);
 		return inList;
 	}
 
+	//Dritte Liste erstellen, in der die sortierte Liste zwischengespeichert wird.
 	finalList = malloc(sizeof(struct list));
+	finalList->last = NULL;
+	finalList->first =NULL;
 
-	while (!(tmp_list->first == NULL && inList->first == NULL)) {
+	printf("merge ");
+	printList(tmp_list);
+	printf(" and ");
+	printList(inList);
+	printf("\n");
+
+	//solange in beiden Listen noch Elemente stehen das jeweils kleinere in die neue Liste schreiben.
+	while (tmp_list->first != NULL && inList->first != NULL) {
 		if (inList->first != NULL && inList->first->val <= tmp_list->first->val) {
+			//wenn noch kein Element in der Ergebnisliste initialisiere fürs erste Element
 			if (finalList->last == NULL) {
 				finalList->first = inList->first;
+				finalList->last = finalList->first;
+			//ansonsten Element hinten anfügen
+			} else {
+				finalList->last->next = inList->first;
+				finalList->last = finalList->last->next;
 			}
 
-			finalList->last->next = inList->first;
-			finalList->last = inList->first;
+			//Ursprungsliste weiterrücken und next für das eingefügte element auf NULL setzen
 			inList->first = inList->first->next;
-			finalList->last->next == NULL;
+			finalList->last->next = NULL;
 			
 		} else if (tmp_list->first != NULL && tmp_list->first->val <= inList->first->val) {
+			//wenn noch kein Element in der Ergebnisliste initialisiere fürs erste Element
 			if (finalList->last == NULL) {
 				finalList->first = tmp_list->first;
+				finalList->last = finalList->first;
+			//ansonsten Element hinten anfügen
+			} else {
+				finalList->last->next = tmp_list->first;
+				finalList->last = finalList->last->next;
 			}
 
-			finalList->last->next = tmp_list->first;
-			finalList->last = tmp_list->first;
-			inList->first = tmp_list->first->next;
-			finalList->last->next == NULL;
+			//Ursprungsliste weiterrücken und next für das eingefügte element auf NULL setzen
+			tmp_list->first = tmp_list->first->next;
+			finalList->last->next = NULL;
 		}
 	}
-	inList->first = finalList->first;
-	inList->last = finalList->last;
-	free(finalList);
+
+	//wenn eine Liste leer ist den Rest der zweiten Liste an die Ergebnisliste anfügen
+	if (tmp_list->first == NULL) {
+		finalList->last->next = inList->first;
+		finalList->last = inList->last;
+	} else {
+		finalList->last->next = tmp_list->first;
+		finalList->last = tmp_list->last;
+	}
+
+	free(inList);
 	free(tmp_list);
-	printf("mergesort 2\n");
-	return inList;
+	return finalList;
 }
 
 // Testet ob der char eine einzelne Zahl ist oder nicht
@@ -219,9 +248,12 @@ int main(int argc, char **argv)
 			addNode(ListBuff, atoi(argv[i]));
 			//printf("%s\n", "main for 2");
 		}
-		printList(ListBuff);
 
-		mergesort(ListBuff);
+		ListBuff = mergesort(ListBuff);
+
+		printf("Sorted List: ");
+		printList(ListBuff);
+		printf("\n");
 
 		clearList(ListBuff);
 
