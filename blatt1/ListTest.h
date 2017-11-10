@@ -1,7 +1,6 @@
 #ifndef _LISTTEST_H
 	#define _LISTTEST_H
 	#define BUFFER_SIZE 32
-#endif
 
 // Listentyp. Merkt sich den ersten und letzten Knoten
 struct list {
@@ -20,3 +19,6 @@ int printList(struct list *inList);
 int getListLength(struct list *inList);
 
 struct list * mergesort(struct list *inList);
+
+
+#endif
