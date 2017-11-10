@@ -126,16 +126,38 @@ int main(int argc, char **argv){
 
 Aufgabe2:
 a)
+Der Speicherfehler wird durch das ändern der Zeile 15 in
+scanf("%d", &val);
+"behoben". Die Methode scanf verlangt Pointer als Parameter und mit dem & wird
+die Adresse der Variable übergeben.
+Behoben ist damit aber nur der Speicherfehler. Gibt man Buchstaben ein, werden
+diese in int übersetzt und für zu große Werte wird die Variable val nur auf den
+größten zugelassenen Wert für int gesetzt.
 b)
+Speicherfehler kann entstehen wenn n größer als die Länge von x oder die Länge
+und "Höhe" von A ist. Dann würden die Zugriffe A[i][j] und x[j] schiefgehen.
 c)
 Der Aufruf gets() List solange ein, bis entweder EoF oder newline Eintritt.
 Evtl. ist der String der eingelesen wird allerdings länger als die 64 Einträge,
 die das Char Array zur Verfügung stellt.
 d)
+Der Fehler kann aufgrund von sizeof(int) aus Zeile 61 auftreten. Man möchte hier
+n Pointer auf ein int Array bekommen. Für jeden Pointer wird im nachhinein
+nocheinmal Platz für ein Array allokiert, welches m ints beinhalten kann. Je
+nach System auf dem das Programm läuft ist sizeof(int) != sizeof(int*). Da beim
+durchlaufen eines Arrays immer um die Speichergröße weitergegangen wird, kann es
+sein das man zB anstatt 4 8 Bytes weitergeht und somit auf falsche Werte zeigt
+oder sogar in falsche Adressräume schreibt.
 e)
+Der Fehler liegt in Zeile 79. Durch i <= n als Abbruchbedingung wird noch für
+A[n] ein Arrayspeicher allokiert. Für den Pointer auf dieses Array ist aber in
+Zeile 77 kein Speicher allokiert worden.
 f)
 g)
 h)
+int val wird nur local erstellt und dann wird die Adresse val übergeben. Der
+Speicher wird am Ende der Methode aber wieder freigegeben, sodass der Inhalt
+der Adresse von der aufrufenden Methode nichtmehr richtig gelesen werden kann.
 i)
 j)
 
@@ -150,25 +172,28 @@ b) $ kill -9 3492
 Killed (Beendet) den Prozess mit der Nummer 3492 sofort.
 
 c) $ find . -name datei
-Sucht im aktuellen Verzeichnis(signalisiert durch den Punkt) und den Unterverzeichnissen nach einer Datei oder einem Ordner mit dem Namen "datei".
+Sucht im aktuellen Verzeichnis(signalisiert durch den Punkt) und den
+Unterverzeichnissen nach einer Datei oder einem Ordner mit dem Namen "datei".
 
 d) $ top -n 10 -u root
-top ist eine Art Taskmanager. Es zeigt die aktuell Laufenden Prozesse an und aktualisiert
-sich dauerhaft automatisch. -u root beschränkt die angezeigten Prozesse auf den Nutzer
-root.
-Unsicher: Mit -n 10 läuft top nur bis man 10 mal refreshed hat?
+top ist eine Art Taskmanager. Es zeigt die aktuell Laufenden Prozesse an und
+aktualisiert sich dauerhaft automatisch. -u root beschränkt die angezeigten
+Prozesse auf den Nutzer root. Mit -n 10 läuft top nur bis man 10 mal refreshed
+hat
 
 e) $ cat -n test.txt
-Zeigt die Datei test.txt auf der Commandozeile. -n Gibt Zeilenangaben vor jeder Zeile an
+Zeigt die Datei test.txt auf der Commandozeile. -n Gibt Zeilenangaben vor jeder
+Zeile an
 
 f) $ sudo chmod 734 HelloWorld
 chmod ändert die Lese und Schreib Berechtigungen der Datei HelloWorld.
 734 steht dabei für die Rechte die zugeilt werden sollen.
-7 steht für rwx was bedeutet der Nutzer kann die Datei lesen, schreiben und ausführen.
+7 steht für rwx was bedeutet der Nutzer kann die Datei lesen, schreiben und
+ausführen.
 3 steht für wx. Die Gruppe hat Schreib und Ausführrechte.
 4 steht nur für w. Jede Person kann diese Person lesen.
-sudo ist ein vorgeschaltetes Programm mit dem es möglich ist Programme als ein anderer
-Nutzer auszuführen der zB mehr Rechte besitzt.
+sudo ist ein vorgeschaltetes Programm mit dem es möglich ist Programme als ein
+anderer Nutzer auszuführen der zB mehr Rechte besitzt.
 
 g) $ diff -q hello.txt bye.txt
 Vergleicht beide Dateien und gibt an ob sie sich unterscheiden oder gleich sind.
@@ -183,10 +208,10 @@ f wird benötigt um den Dateinamen der Zieldatei mitzugeben.
 
 
 i) $ du -hs .
-du listet alle Dateien auf die sich im Verzeichnis (hier . Also da wo man sich befindet)
-befinden mit ihren Größen auf. Durch -h werden die Dateigrößen in für Menschen lesbar
-dargestellt (MB, KB etc.) und durch -s wird nur angezeigt wie viel Platz alle Dateien
-zusammen einnehmen.
+du listet alle Dateien auf die sich im Verzeichnis (hier . Also da wo man sich
+befindet) befinden mit ihren Größen auf. Durch -h werden die Dateigrößen in für
+Menschen lesbar dargestellt (MB, KB etc.) und durch -s wird nur angezeigt wie
+viel Platz alle Dateien zusammen einnehmen.
 
 j) $ wget https://www.kernel.org/pub/linux/kernel/v4.x/linux-\
 4.0.tar.xz; tar xJf linux-4.0.tar.xz; grep -R --\
@@ -194,6 +219,7 @@ include=*.[hcS] ' fuck\| shit' linux-4.0 | wc -l
 Dieser Command besteht aus 3 Teilen.
 1. wget downloadet die Datei des angegebenen Links.
 2. tar linux-4.0.tar.xz entpackt diese dann.
-3. grep durchsucht Archiv dann Rekursiv und mit alles symbolic links also Verknüpfungen nach
-Dateien die die Dateiendung h, c oder S haben. Danach sucht es in den Dateien nach den
-Wörtern 'fuck' und 'shit' und zählt mit wc -l die Zeilen in denen die Wörter vorkommen.
+3. grep durchsucht Archiv dann Rekursiv und mit alles symbolic links also
+Verknüpfungen nach Dateien die die Dateiendung h, c oder S haben. Danach sucht
+es in den Dateien nach den Wörtern 'fuck' und 'shit' und zählt mit wc -l die
+Zeilen in denen die Wörter vorkommen.
