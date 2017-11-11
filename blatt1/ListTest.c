@@ -39,11 +39,15 @@ struct list * addNode(struct list *inList, int inValue)
 int printList(struct list *inList) {
 	struct node *Counter;
 	Counter = inList->first;
-
+	printf("[");
 	while (Counter != NULL) {
-		printf("%i ", Counter->val);
+		printf("%i", Counter->val);
 		Counter = Counter->next;
+		if (Counter != NULL) {
+			printf(" ");
+		}
 	}
+	printf("]");
 	return 42;
 }
 
@@ -131,9 +135,13 @@ int main(int argc, char **argv)
 			addNode(ListBuff, atoi(argv[i]));
 		}
 
+		printf("list input: ");
+		printList(ListBuff);
+		printf("\n");
+
 		ListBuff = mergesort(ListBuff);
 
-		printf("Sorted List: ");
+		printf("sorted list: ");
 		printList(ListBuff);
 		printf("\n");
 

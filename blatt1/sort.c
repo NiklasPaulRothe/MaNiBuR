@@ -12,7 +12,7 @@ struct list * mergesort(struct list *inList) {
 	tmp_list->last = inList->last;
 	listLength = getListLength(inList);
 
-	printf("Mergesort: ");
+	printf("mergeSort: ");
 	printList(inList);
 	printf("\n");
 
