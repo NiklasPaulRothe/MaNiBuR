@@ -154,6 +154,13 @@ A[n] ein Arrayspeicher allokiert. Für den Pointer auf dieses Array ist aber in
 Zeile 77 kein Speicher allokiert worden.
 f)
 g)
+Ein Fehler kommt durch p += sizeof(int) generiert. Wenn ich der Methode ein
+Array übergebe und mir den Wert auf den p zeigt vor jedem p+= ausgebe, merke ich,
+dass der Pointer um 4 Werte weiterspringt. Dies kommt zu stande, da das addieren
+von x auf eine Adresse diese um x mal die Größe des Datentyps erhöht. sizeof(int)
+gibt in meinem Fall 4 zurück (int ist 4Byte groß), sodass p um 4*sizeof(int)
+erhöht wird. p+=1 würde das richtige Ergebnis liefern, da durch das array
+gelaufen werden soll.
 h)
 int val wird nur local erstellt und dann wird die Adresse val übergeben. Der
 Speicher wird am Ende der Methode aber wieder freigegeben, sodass der Inhalt
