@@ -8,17 +8,26 @@
 struct list * addNode(struct list *inList, int inValue)
 {	
 	if (inList->first == NULL) {
+		// Wenn die Liste noch leer ist:
+		// Allokiere Speicher und erstelle Knoten mit dem Value		
 		struct node *NodeBuff;
 		NodeBuff = malloc(sizeof(struct node));
 		NodeBuff->val = inValue;
+		NodeBuff->next = NULL;
+		// Setze dann First und Last der Liste auf den neuen Knoten
 		inList->first = NodeBuff;
 		inList->last = NodeBuff;
 
 		return inList;
 	} else {
+		// Enthält die Liste bereits Elemente:
+		// Allokiere Speicher und erstelle Knoten mit dem Value	
 		struct node *NodeBuff;
 		NodeBuff = malloc(sizeof(struct node));
 		NodeBuff->val = inValue;
+		NodeBuff->next = NULL;
+		// Lasse den next Zeiger des letzten Knoten und dann 
+		// last der Liste auf den neuen Knoten zeigen
 		inList->last->next = NodeBuff;
 		inList->last = NodeBuff;
 
@@ -40,13 +49,17 @@ int printList(struct list *inList) {
 
 // Löscht eine Liste und gibt den Speicher wieder frei
 int clearList(struct list *inList) {
+	// 2 temporäre Knoten um noch Zugriff auf den nächsten 
+	// Knoten zu haben wenn der jetzige gelöscht wurde.
 	struct node *temp, *temp2;
 	temp = inList->first;
 	while (temp != NULL) {
 		temp2 = temp->next;
+		// free() Aufruf für jeden Knoten
 		free(temp);
 		temp = temp2;
 	}
+	// free() Aufruf für die Liste
 	free(inList);
 	printf("free memory...\n");
 	return 42;
@@ -75,7 +88,7 @@ int isDigit(char toTest) {
 	return 0;
 }
 
-// Testet ob der gegebene String eine ganze Zahl(inkl negativ) ist oder nicht
+// Testet ob der gegebene String eine ganze (positive oder negative) Zahl ist oder nicht
 int isNumber(char *input) {	
 	int i, isNumber;
 	isNumber = 42;
@@ -100,7 +113,9 @@ int main(int argc, char **argv)
 	// Erstellen der Liste
 	struct list *ListBuff;
 	ListBuff = malloc(sizeof(struct list));
-	
+	ListBuff->first = NULL;
+	ListBuff->last = NULL;
+
 	// Testet ob die Übergabeparameter den Vorschriften entsprechen
 	int areNumbers;
 	areNumbers = 42;
