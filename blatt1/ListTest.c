@@ -10,26 +10,18 @@ struct list * addNode(struct list *inList, int inValue)
 	if (inList->first == NULL) {
 		struct node *NodeBuff;
 		NodeBuff = malloc(sizeof(struct node));
-		//printf("%s\n", "if 1");
 		NodeBuff->val = inValue;
-		//printf("%s\n", "if 2");
 		inList->first = NodeBuff;
-		//printf("%s\n", "if 3");
 		inList->last = NodeBuff;
 
-		//printf("addNote hat  %f als erstes Element eingefügt.\n", inList->first->val);
+		return inList;
 	} else {
 		struct node *NodeBuff;
 		NodeBuff = malloc(sizeof(struct node));
-		//printf("%s\n", "else 1");
 		NodeBuff->val = inValue;
-		//printf("%s\n", "else 2");
 		inList->last->next = NodeBuff;
-		//printf("%s\n", "else 3");
 		inList->last = NodeBuff;
 
-		//printf("first value der Liste ist %f.\n", inList->first->val);
-		//printf("addNote hat %f als weiteres Element eingefügt.\n", inList->last->val);
 		return inList;
 	}
 }
@@ -39,13 +31,11 @@ int printList(struct list *inList) {
 	struct node *Counter;
 	Counter = inList->first;
 
-	//printf("\n You inserted following numbers: \n");
 	while (Counter != NULL) {
 		printf("%i ", Counter->val);
 		Counter = Counter->next;
 	}
-	//printf("\n printing finished! \n");
-
+	return 42;
 }
 
 // Löscht eine Liste und gibt den Speicher wieder frei
@@ -59,6 +49,7 @@ int clearList(struct list *inList) {
 	}
 	free(inList);
 	printf("free memory...\n");
+	return 42;
 
 }
 
@@ -104,7 +95,7 @@ int main(int argc, char **argv)
 {	
 	printf("\n");
 
-	int i, j;
+	int i;
 
 	// Erstellen der Liste
 	struct list *ListBuff;
