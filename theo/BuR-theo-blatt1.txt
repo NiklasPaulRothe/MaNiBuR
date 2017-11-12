@@ -176,9 +176,7 @@ f)
 Durch die Anweisung *size-- wird nicht, wie vermutlich gewollt, die größe des
 Heaps verringert, sondern der Wert des integers, auf welchen size gerade zeigt,
 womit hier der Heap nicht verkleinert wird, sondern lediglich ein Wert um eins
-verringert wird. Entsprechend wird auch nicht der Wert an der letzten Stelle 
-des Heaps nach vorne gesetzt, sondern ein zufälliger Wert, der von dem letzen
-Element des Heaps abhängt.
+verringert wird.
 g)
 Ein Fehler kommt durch p += sizeof(int) generiert. Wenn ich der Methode ein
 Array übergebe und mir den Wert auf den p zeigt vor jedem p+= ausgebe, merke ich,
