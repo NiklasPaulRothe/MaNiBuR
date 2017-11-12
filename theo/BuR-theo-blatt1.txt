@@ -1,38 +1,42 @@
-Aufgabe 1;
+Aufgabe 1:
 
-a) 11 Fehler gefunden
+a) 13 Fehler gefunden
 
 
-// #include <stdio.h> - <> anstatt ""
+// - #include <stdio.h> - <> anstatt ""
 #include "stdio.h"
 
-// Semicolon darf hier nicht stehen. define ist eine Textersetzung und das semicolon würde fehler beim einsetzen hervorrufen.
+// - Semicolon darf hier nicht stehen. define ist eine Textersetzung und das
+//   semicolon würde Fehler beim einsetzen hervorrufen.
 #define CURRENT_YEAR 2015;
-// Selbiges wie aus der Zeile zuvor
+// - Selbiges wie aus der Zeile zuvor
 #define MAX_YEAR 2500;
 
 
 int main(int argc, char **argv){
 
-
-    // year kann nicht in der for schleife definiert werden. Lösung: int year; for(year = 0;...
-    // MAX_YEAR Rechtschreibfehler
+    // - year kann nicht in der for-schleife definiert werden.
+    //   Lösung: int year; for(year = 0;...
+    // - MAX_YEAR Rechtschreibfehler
     for(int year=0; year < MAX_YAER; year++){
 
-        // == anstatt =. Das einfache = würde year neu zuweisen anstatt einen Vergleich durchzuführen
-        // Semicolon muss entfernt werden. if-Body {} um printIt(year);
+        // - == anstatt =. Das einfache = würde year neu zuweisen anstatt einen
+        //   Vergleich durchzuführen
+        // - Semicolon muss entfernt werden
         if( year = CURRENT_YEAR );
             printIt(year);
-
-        // else-body {} um printf(...) fehlt.
         else
-            // semicolon hinter printf(...) fehlt
+            // - semicolon hinter printf(...) fehlt
+            // - ein \n hinter ... für eine neue Zeile macht die Ausgabe auf
+            //   der Kommandozeile einfacher zu lesen.
             printf("passed the year %d...", year)
     }
+// - } für die main Methode fehlt
 
-// Methode sollte vor der Main Methode stehen.
-// int anstatt Int beim rückgabewert.
+// - Methode sollte vor der Main Methode stehen.
+// - int anstatt Int beim Rückgabewert.
 Int printIt(int year){
+    // - Wie oben macht auch hier ein \n hinter dem %d die Ausgabe leserlicher
     printf("The current year is: %d", year);
 }
 
@@ -41,20 +45,26 @@ Int printIt(int year){
 
 
 
-b) 4 Fehler
-//#include <stdio.h> fehlt. printf verursacht warning.
+b) 7 Fehler
+// - #include <stdio.h> fehlt. printf verursacht Warning.
 int main(int argc, char **argv){
 
 
-    // Initialisierung der Variable value fehlt.
+    // - Initialisierung der Variable value fehlt.
+    // - um value = 10 also abbruch zu bekommen sollte geprüft werden ob value
+    //   nicht bereits mit größer 10 initialisiert worden ist und do-while
+    //   somit in eine Endlosschleife läuft
     int value;
     do{
         value++;
+        // - Für eine bessere Lesbarkeit der Kommandozeilenausgabe sollte
+        //   hinter %d ein \n für eine neue Zeile angefügt werden.
         printf("current value: %d", value);
 
-
-    // Semicolon hinter while(...) fehlt
-    // Anstatt !(value==10) wäre value!=10 besser zu lesen.
+    // - Semicolon hinter while(...) fehlt
+    // - Anstatt !(value==10) wäre value!=10 besser zu lesen.
+    // - wurde (wie oben beschrieben) value richtig initialisiert, dann ist der
+    //   Vergleich mit 20 überflüssig
     }while(!(value==10) || !(value==20))
     //now our value equals 10
     return 0;
@@ -65,7 +75,7 @@ int main(int argc, char **argv){
 
 
 
-c) 6? Fehler
+c) 5 Fehler
 
 
 #include <stdlib.h>
@@ -76,20 +86,27 @@ c) 6? Fehler
 //input: single text argument
 //output: text argument printed backwards
 int main(int argc, char **argv){
-    // argv[0] würde namen des programms zurückgeben und nicht das erste string argument
-    // hier war wohl malloc(strlen(argv[1] * sizeof(char)) gemeint um einen buffer auf einen string zu bekommen
+    // - argv[0] würde den Namen des Programms zurückgeben und nicht das erste
+    //   String-Argument
+    // - hier war wohl malloc(strlen(argv[1])) gemeint um einen Speicher für
+    //   einen String zu allokieren
     char* buff = malloc(strlen(argv[0]));
     int i;
-    //sizeof braucht einen datentypen. hier muss aber strlen(argv[1]) anstatt sizeof(...) hin um die länge des ersten arguments zu bekommen
+    // - sizeof braucht einen Datentypen. Hier muss aber
+    //   strlen(argv[1])-1 anstatt sizeof(...) hin um die Länge des ersten
+    //   Arguments zu bekommen. -1 wird benötigt da Arrays Indizes startend mit
+    //   0 haben
     for(i=sizeof(argv[0]); i>=0; i--){
-        // auch hier argv[1][i]
-        // iwas mit der buff zählweise und rechnen mit pointern
+        // - auch hier muss argv[1][i] genutzt werden im das erste Argument zu
+        //   bekommen
         *buff++ = argv[0][i];
     }
-    //buffer zeigt nicht auf das erste element des auszugebenen strings sondern auf das letzte. Lösung wäre ein 2. Pointer der am anfang von buff geklont wird
-    // und dann für die pointer berechnungen aus den zeilen zuvor genutzt wird. dann zeigt buff immernoch auf den anfang des strings
+    // - buff zeigt nicht auf das erste Element des auszugebenen Strings sondern
+    //   auf das letzte. Lösung wäre ein 2. Pointer der nach der deklaration von
+    //   buff geklont und dann anstelle von buff genutzt wird. So zeigt buff noch
+    //   auf die richtige Speicheradresse und kann hier ausgegeben werden.
     printf("%s\n", buff);
-    // nur durch den 2. pointer aus der zeile drüber ist diese zeile korrekt
+    // - nur durch den 2. Pointer aus der Zeile drüber ist diese Zeile korrekt
     free(buff);
     return 0;
 }
@@ -99,14 +116,16 @@ int main(int argc, char **argv){
 
 
 
-d)
+d) 6 Fehler
 #include <stdio.h>
 
-// rückgabe für array ist int* anstatt int[]
-// int vector[] - eckige klammern hinter den variablen namen und nicht dem typen
+// - Rückgabeparameter für ein Array ist int* anstatt int[]
+// - int vector[] - eckige Klammern hinter den Variablennamen und nicht dem Typen
 int[] times(int[] vector, int times){
     int i;
-    // for schleife würde durch sizeof vector zu weit laufen. der wert müsste noch durch size of int geteilt werden um die anzahl der elemente zu bekommen
+    // - for-Schleife würde durch sizeof Vector zu weit laufen. Der Wert müsste
+    //   noch durch sizeof(int) geteilt werden um die Anzahl der Elemente zu
+    //   bekommen: ... i < (sizeof(vector)/sizeof(int)); ...
     for(i=0; i<sizeof(vector); i++){
         vector[i] *= times;
     }
@@ -114,17 +133,17 @@ int[] times(int[] vector, int times){
 }
 
 int main(int argc, char **argv){
-    //auch hier int v[4]
-    //v soll vermutlich vector heißen
+    // - auch hier gehören die Klammern hinter den Variablennamen: int v[4]
+    // - v soll vermutlich vector heißen
     int[4] v = {1,1,1,1};
     vector = times(vector, 2);
-    // auch hier wird mit v wohl vector gemeint sein
+    // - auch hier wird mit v wohl vector gemeint sein
     printf("(%d,%d,%d,%d)", v[1],v[2],v[3],v[4]);
     return 0;
 }
 
 
-Aufgabe2:
+Aufgabe 2:
 a)
 Der Speicherfehler wird durch das ändern der Zeile 15 in
 scanf("%d", &val);
@@ -134,10 +153,11 @@ Behoben ist damit aber nur der Speicherfehler. Gibt man Buchstaben ein, werden
 diese in int übersetzt und für zu große Werte wird die Variable val nur auf den
 größten zugelassenen Wert für int gesetzt.
 b)
-Speicherfehler kann entstehen wenn n größer als die Länge von x oder die Länge
-und "Höhe" von A ist. Dann würden die Zugriffe A[i][j] und x[j] schiefgehen.
+Ein Speicherfehler kann entstehen wenn n größer als die Länge von x oder die
+Länge und "Höhe" von A ist. Dann würden die Zugriffe A[i][j] und x[j]
+schiefgehen.
 c)
-Der Aufruf gets() List solange ein, bis entweder EoF oder newline Eintritt.
+Der Aufruf gets() ließt solange ein, bis entweder EoF oder newline Eintritt.
 Evtl. ist der String der eingelesen wird allerdings länger als die 64 Einträge,
 die das Char Array zur Verfügung stellt.
 d)
@@ -166,7 +186,14 @@ int val wird nur local erstellt und dann wird die Adresse val übergeben. Der
 Speicher wird am Ende der Methode aber wieder freigegeben, sodass der Inhalt
 der Adresse von der aufrufenden Methode nichtmehr richtig gelesen werden kann.
 i)
+Der Fehler wird prdouziert durch die Zeile 150. Genauer gesagt durch das x[i]++,
+denn x wurde in Zeile 146 bereits freigegeben und somit ist der Speicher vllt.
+bereits anders belegt. Evtl. sogar durch y selbst.
 j)
+Der Speicherfehler ist hier ein fehlendes free(). In der Methode wird
+Speicher für x allokiert. Dadurch, das der Zeiger auf den allokierten Speicher
+auch nicht aus der Methode herausgegeben wird, kann man auch nicht erwarten das
+er von außen wieder freigegeben wird.
 
 
 Aufgabe 3:
