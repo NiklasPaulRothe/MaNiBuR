@@ -2,57 +2,9 @@
 #include <stdlib.h>
 #include "ListTest.h"
 
-//Nimmt eine Liste und sortiert diese mit Hilfe des mergesort Algorithmus
-struct list * mergesort(struct list *inList) {
-	//Initialisiere nötige Variablen
-	int listLength, i;
-	struct list *tmp_list, *finalList;
-	tmp_list = malloc(sizeof(struct list));
-	tmp_list->first = inList->first;
-	tmp_list->last = inList->last;
-	listLength = getListLength(inList);
-
-	printf("Mergesort: ");
-	printList(inList);
-	printf("\n");
-
-	//Wenn die Liste mehr als ein Element enthält, Liste aufsplitten
-	if (listLength > 1) {
-		
-		printf("split ");
-		printList(inList);
-		printf(" into ");
-
-		//Eine Hälfte der Elemente in eine neue Liste schreiben
-		for (i = 0; i < (listLength/2); i++) {	
-
-			if (i + 2 >= (listLength / 2)) {
-				inList->last = tmp_list->first;
-			}
-
-		tmp_list->first = tmp_list->first->next;
-		}
-
-		//setze die Enden beider Listen auf NULL
-		inList->last->next = NULL;
-		tmp_list->last->next = NULL;
-
-		printList(inList);
-		printf(" and ");
-		printList(tmp_list);
-		printf("\n");
-
-		//rekursiver Aufruf von mergesort für beide Listen.
-		inList = mergesort(inList);
-		tmp_list = mergesort(tmp_list);
-
-	//Hat die Liste nur ein Element wird die Rekursion abgebrochen.
-	} else {
-		free(tmp_list);
-		return inList;
-	}
-
+struct list * merge(struct list * inList, struct list * tmp_list) {
 	//Dritte Liste erstellen, in der die sortierte Liste zwischengespeichert wird.
+	struct list *finalList;
 	finalList = malloc(sizeof(struct list));
 	finalList->last = NULL;
 	finalList->first =NULL;
@@ -105,8 +57,70 @@ struct list * mergesort(struct list *inList) {
 		finalList->last->next = tmp_list->first;
 		finalList->last = tmp_list->last;
 	}
-
 	free(inList);
 	free(tmp_list);
 	return finalList;
+}
+
+void split (struct list *inList, struct list *tmp_list, int listLength) {
+	//Initialisiere nötige Variablen
+	int i;
+
+	printf("split ");
+	printList(inList);
+	printf(" into ");
+
+	//Eine Hälfte der Elemente in eine neue Liste schreiben
+	for (i = 0; i < (listLength/2); i++) {	
+
+		if (i + 2 >= (listLength / 2)) {
+			inList->last = tmp_list->first;
+		}
+
+	tmp_list->first = tmp_list->first->next;
+	}
+
+	//setze die Enden beider Listen auf NULL
+	inList->last->next = NULL;
+	tmp_list->last->next = NULL;
+
+	printList(inList);
+	printf(" and ");
+	printList(tmp_list);
+	printf("\n");
+
+	return;
+	
+}
+
+//Nimmt eine Liste und sortiert diese mit Hilfe des mergesort Algorithmus
+struct list * mergesort(struct list *inList) {
+	//Initialisiere nötige Variablen
+	int listLength;
+	struct list *tmp_list;
+	tmp_list = malloc(sizeof(struct list));
+	tmp_list->first = inList->first;
+	tmp_list->last = inList->last;
+	listLength = getListLength(inList);
+
+	printf("Mergesort: ");
+	printList(inList);
+	printf("\n");
+
+	//Wenn die Liste mehr als ein Element enthält, Liste aufsplitten
+	if (listLength > 1) {
+		split(inList, tmp_list, listLength);
+		
+		//rekursiver Aufruf von mergesort für beide Listen.
+		inList = mergesort(inList);
+		tmp_list = mergesort(tmp_list);	
+
+	//Hat die Liste nur ein Element wird die Rekursion abgebrochen.
+	} else {
+		free(tmp_list);
+		return inList;
+	}
+
+	inList = merge(inList, tmp_list);
+	return inList;
 }
