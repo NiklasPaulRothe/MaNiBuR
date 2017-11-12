@@ -8,28 +8,29 @@
 struct list * addNode(struct list *inList, int inValue)
 {	
 	if (inList->first == NULL) {
+		// Wenn die Liste noch leer ist:
+		// Allokiere Speicher und erstelle Knoten mit dem Value		
 		struct node *NodeBuff;
 		NodeBuff = malloc(sizeof(struct node));
-		//printf("%s\n", "if 1");
 		NodeBuff->val = inValue;
-		//printf("%s\n", "if 2");
+		NodeBuff->next = NULL;
+		// Setze dann First und Last der Liste auf den neuen Knoten
 		inList->first = NodeBuff;
-		//printf("%s\n", "if 3");
 		inList->last = NodeBuff;
 
-		//printf("addNote hat  %f als erstes Element eingefügt.\n", inList->first->val);
+		return inList;
 	} else {
+		// Enthält die Liste bereits Elemente:
+		// Allokiere Speicher und erstelle Knoten mit dem Value	
 		struct node *NodeBuff;
 		NodeBuff = malloc(sizeof(struct node));
-		//printf("%s\n", "else 1");
 		NodeBuff->val = inValue;
-		//printf("%s\n", "else 2");
+		NodeBuff->next = NULL;
+		// Lasse den next Zeiger des letzten Knoten und dann 
+		// last der Liste auf den neuen Knoten zeigen
 		inList->last->next = NodeBuff;
-		//printf("%s\n", "else 3");
 		inList->last = NodeBuff;
 
-		//printf("first value der Liste ist %f.\n", inList->first->val);
-		//printf("addNote hat %f als weiteres Element eingefügt.\n", inList->last->val);
 		return inList;
 	}
 }
@@ -38,27 +39,34 @@ struct list * addNode(struct list *inList, int inValue)
 int printList(struct list *inList) {
 	struct node *Counter;
 	Counter = inList->first;
-
-	//printf("\n You inserted following numbers: \n");
+	printf("[");
 	while (Counter != NULL) {
-		printf("%i ", Counter->val);
+		printf("%i", Counter->val);
 		Counter = Counter->next;
+		if (Counter != NULL) {
+			printf(" ");
+		}
 	}
-	//printf("\n printing finished! \n");
-
+	printf("]");
+	return 42;
 }
 
 // Löscht eine Liste und gibt den Speicher wieder frei
 int clearList(struct list *inList) {
+	// 2 temporäre Knoten um noch Zugriff auf den nächsten 
+	// Knoten zu haben wenn der jetzige gelöscht wurde.
 	struct node *temp, *temp2;
 	temp = inList->first;
 	while (temp != NULL) {
 		temp2 = temp->next;
+		// free() Aufruf für jeden Knoten
 		free(temp);
 		temp = temp2;
 	}
+	// free() Aufruf für die Liste
 	free(inList);
 	printf("free memory...\n");
+	return 42;
 
 }
 
@@ -84,7 +92,7 @@ int isDigit(char toTest) {
 	return 0;
 }
 
-// Testet ob der gegebene String eine ganze Zahl(inkl negativ) ist oder nicht
+// Testet ob der gegebene String eine ganze (positive oder negative) Zahl ist oder nicht
 int isNumber(char *input) {	
 	int i, isNumber;
 	isNumber = 42;
@@ -104,12 +112,14 @@ int main(int argc, char **argv)
 {	
 	printf("\n");
 
-	int i, j;
+	int i;
 
 	// Erstellen der Liste
 	struct list *ListBuff;
 	ListBuff = malloc(sizeof(struct list));
-	
+	ListBuff->first = NULL;
+	ListBuff->last = NULL;
+
 	// Testet ob die Übergabeparameter den Vorschriften entsprechen
 	int areNumbers;
 	areNumbers = 42;
@@ -125,9 +135,13 @@ int main(int argc, char **argv)
 			addNode(ListBuff, atoi(argv[i]));
 		}
 
+		printf("list input: ");
+		printList(ListBuff);
+		printf("\n");
+
 		ListBuff = mergesort(ListBuff);
 
-		printf("Sorted List: ");
+		printf("sorted list: ");
 		printList(ListBuff);
 		printf("\n");
 
