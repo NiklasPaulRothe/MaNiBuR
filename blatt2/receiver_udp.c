@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 /* 
 	receiving header (2)
 */
-	char msg[16];
+	char msg[32];
 	int len, flen;
 	struct sockaddr_in from;
 
@@ -73,14 +73,45 @@ int main(int argc, char **argv)
 		printf("Error by receiver receiving");
 	}
 
+	/*
+		get header
+	*/
 	unsigned char head = msg[0];
-	unsigned char name_len[2];
-	name_len[0] = (unsigned short)msg[1];
-	name_len[1] = (unsigned short)msg[2];
 
+	/*
+		get name length
+	*/
+	unsigned short name_len = 0;
+	name_len = name_len | msg[1];
+	name_len <<= 8;
+	name_len = name_len | msg[2];
+	
+	/*
+		get file name
+	*/
+	char *name;
+	unsigned short index;
+	for (index = 0; index < name_len; index++) {
+		name[index] = msg[index+3];
+		printf(" ");
+	}
+	name[index] = '\0';
 
-	printf("Received %d bytes from host %s port %d: %s\n", len, inet_ntoa(from.sin_addr), ntohs(from.sin_port), msg);
-	printf("Header: %hhu, Name-length: %hu \n", head, name_len);
+	/*
+		get file size
+	*/
+	index = index + 3;
+	unsigned int file_size = 0;
+	file_size = file_size | msg[index];
+	file_size <<= 8;
+	file_size = file_size | msg[index+1];
+	file_size <<= 8;
+	file_size = file_size | msg[index+2];
+	file_size <<= 8;
+	file_size = file_size | msg[index+3];
+
+	printf("Received %d bytes from host %s port %d: %s\n", len, inet_ntoa(from.sin_addr), ntohs(from.sin_port), name);
+	printf("Header: %hhu, Name-length: %hu, File_size: %u \n", head, name_len, file_size);
 
 
 
@@ -92,7 +123,7 @@ int main(int argc, char **argv)
 	if (err < 0) {
 		printf("Error by receiver socket close\n");
 	}
-
+ 
 	printf("receiver_udp finished!\n");
 
 }

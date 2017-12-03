@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <string.h>
 
 #include "Aufgabe2.h"
 
@@ -88,11 +89,16 @@ int main(int argc, char **argv)
 		*/
 		char *msg;
 		struct sockaddr_in destination;
+		
 
 		msg[0] = HEADER_T;
 		unsigned short temp = strlen(directory);
-		msg[1] = 1;
-		msg[2] = 1;
+		printf("temp: %hu\n", temp);
+		msg[2] = temp;
+		//printf("msg2: %hu\n", msg[2]);
+		temp >>= 8;
+		msg[1] = temp;
+		//printf("msg1: %hu\n", msg[1]);
 
 		for (temp = 0; temp < strlen(directory); temp++) {
 			msg[temp+3] = directory[temp];
@@ -102,6 +108,7 @@ int main(int argc, char **argv)
 		msg[3+strlen(directory)+1] = 3;
 		msg[3+strlen(directory)+2] = 3;
 		msg[3+strlen(directory)+3] = 3;
+		
 
 
 		destination.sin_family = AF_INET;
@@ -109,8 +116,12 @@ int main(int argc, char **argv)
 		destination.sin_addr.s_addr = inet_addr(inet_ntoa(from.sin_addr));
 
 		printf("%s\n", msg);
+		printf("%hu\n", msg[2]);
 
-		err = sendto(udp_socket, msg, strlen(msg)+1, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
+		
+		int msg_len = sizeof(unsigned char) + sizeof(unsigned short) + strlen(directory) + sizeof(unsigned int);
+		printf("msg_len %d\n", msg_len);
+		err = sendto(udp_socket, msg, msg_len, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 		if (err < 0) {
 			printf("Error by sender sendto\n");
 			close(udp_socket);
