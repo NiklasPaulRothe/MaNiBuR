@@ -7,8 +7,21 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "Aufgabe2.h"
+
+//code inspired by Ted Percival from stackoverflow
+//https://stackoverflow.com/questions/8236/how-do-you-determine-the-size-of-a-file-in-c
+int file_size(const char *filename) {
+	struct stat st;
+
+	if (stat(filename, &st) == 0) {
+		return st.st_size;
+	}
+
+	return -1;
+}
 
 int main(int argc, char **argv)
 {	
@@ -60,7 +73,11 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-
+/*
+	compress file
+*/
+	//TODO: vernünftiges zippen!, rm Befehl beim closen beachten
+	system("tar -czf hallo.tar.gz hallo.txt");
 
 /* 
 	receiving request (1)
@@ -89,25 +106,39 @@ int main(int argc, char **argv)
 		*/
 		char *msg;
 		struct sockaddr_in destination;
+		msg[0] = HEADER_T;
 		
 
-		msg[0] = HEADER_T;
+		/*
+			sending name length
+		*/
 		unsigned short temp = strlen(directory);
-		printf("temp: %hu\n", temp);
 		msg[2] = temp;
-		//printf("msg2: %hu\n", msg[2]);
 		temp >>= 8;
 		msg[1] = temp;
-		//printf("msg1: %hu\n", msg[1]);
 
+		/*
+			sending name
+		*/
 		for (temp = 0; temp < strlen(directory); temp++) {
 			msg[temp+3] = directory[temp];
 		}
 
-		msg[3+strlen(directory)] = 3;
-		msg[3+strlen(directory)+1] = 3;
-		msg[3+strlen(directory)+2] = 3;
-		msg[3+strlen(directory)+3] = 3;
+		/*
+			sending file size
+		*/
+		unsigned int size = file_size("hallo.tar.gz");
+		printf("size: %u\n", size);
+		msg[3+strlen(directory)+3] = size;
+		size >>= 8;
+		msg[3+strlen(directory)+2] = size;
+		size >>= 8;
+		msg[3+strlen(directory)+1] = size;
+		size >>= 8;
+		msg[3+strlen(directory)] = size;
+		size >>= 8;
+		printf("msg: %u\n", msg[11]);
+
 		
 
 
@@ -115,8 +146,6 @@ int main(int argc, char **argv)
 		destination.sin_port = from.sin_port;
 		destination.sin_addr.s_addr = inet_addr(inet_ntoa(from.sin_addr));
 
-		printf("%s\n", msg);
-		printf("%hu\n", msg[2]);
 
 		
 		int msg_len = sizeof(unsigned char) + sizeof(unsigned short) + strlen(directory) + sizeof(unsigned int);
@@ -128,6 +157,22 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}	
 
+	/*
+		sending file
+	*/
+		f = open("hallo.tar.gz", r);
+		
+		unsigned int packages = (file_size/(unsigned int)1492);
+		if (packages%1 != 0) {
+			packages = packages + 1;
+		}
+
+		unsigned int count;
+		for (count = 0, count < packages, count++) {
+			err = sendto(udp_socket, f, file_size, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
+		}
+		
+
 
 	}
 
@@ -136,6 +181,8 @@ int main(int argc, char **argv)
 /* 
 	closing the socket
 */
+	//TODO: an Dateinamen koppeln
+	system("rm hallo.tar.gz");
 	err = close(udp_socket);
 	if (err < 0) {
 		printf("Error by sender socket close\n");

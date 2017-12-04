@@ -113,6 +113,10 @@ int main(int argc, char **argv)
 	printf("Received %d bytes from host %s port %d: %s\n", len, inet_ntoa(from.sin_addr), ntohs(from.sin_port), name);
 	printf("Header: %hhu, Name-length: %hu, File_size: %u \n", head, name_len, file_size);
 
+/*
+	receiving file
+*/
+	
 
 
 
