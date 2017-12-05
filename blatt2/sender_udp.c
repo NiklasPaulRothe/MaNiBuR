@@ -75,7 +75,10 @@ int main(int argc, char **argv)
 	compress file
 */
 	//TODO: vernünftiges zippen!, rm Befehl beim closen beachten
-	system("tar -czf hallo.tar.gz hallo.txt");
+	char tar[22 + strlen(directory)];
+	sprintf(tar, "tar -czf hallo.tar.gz %s", directory);
+
+	system(tar);
 
 /* 
 	receiving request (1)
@@ -201,8 +204,8 @@ int main(int argc, char **argv)
 				//printf("test\n");
 				//exit(EXIT_FAILURE);
 				if(fgetc(f) != EOF){
-					printf("byte %i in package %u\n", i, count);
 					msg_data[i + 5] = fgetc(f);
+					printf("byte %i in package %u is %c\n", i, count, msg_data[i + 5]);					
 				} else {
 					printf("closing file\n");
 					fclose(f);

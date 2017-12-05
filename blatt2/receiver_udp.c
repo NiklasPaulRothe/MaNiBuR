@@ -95,7 +95,6 @@ int main(int argc, char **argv)
 	unsigned short index;
 	for (index = 0; index < name_len; index++) {
 		name[index] = msg[index+3];
-		printf(" ");
 	}
 	name[index] = '\0';
 
@@ -114,16 +113,25 @@ int main(int argc, char **argv)
 	file_size <<= 8;
 	index++;
 	file_size = file_size | (unsigned char)msg[index];
-	printf("%u\n", file_size);
 
 	printf("Received %d bytes from host %s port %d: %s\n", len, inet_ntoa(from.sin_addr), ntohs(from.sin_port), name);
 	printf("Header: %hhu, Name-length: %hu, File_size: %u \n", head, name_len, file_size);
+
+/*
+	create file
+*/
+	char truncate[name_len+22];
+	sprintf(truncate, "truncate -s 0 received/%s", name);
+
+	system(truncate);
+
 
 /*
 	receiving file (4)
 */
 	printf("receiving data start\n");
 	unsigned int needed_number = 0;
+	unsigned int file_pointer = 0;
 	while (1) {
 		/*
 			receiving a packet
@@ -149,7 +157,6 @@ int main(int argc, char **argv)
 			checks if its the right packet (in order)
 		*/
 		unsigned int package_number = 0;
-		printf("msg_data 1-4: %hhu %hhu %hhu %hhu\n", msg_data[1], msg_data[2], msg_data[3], msg_data[4]);
 		package_number = package_number | (unsigned char)msg_data[1];
 		package_number <<= 8;
 		package_number = package_number | (unsigned char)msg_data[2];
@@ -163,10 +170,24 @@ int main(int argc, char **argv)
 		}
 		needed_number++;
 		
-		//printf("before test exit\n");
-		//exit(EXIT_FAILURE);	
+		/*
+			putting data into file
+		*/
 
-		printf("Processing data required\n");
+		char filepath[name_len+9];
+		sprintf(filepath, "received/%s", name);
+		FILE *f;
+		f = fopen(filepath, "a");
+
+		int i;
+		printf("start writing\n");		
+		printf("msg_data_start is %i long\n", strlen(msg_data_start));
+		for (i = 5; i < strlen(msg_data_start); i++) {
+			char temp = fputc(msg_data_start[i], f);
+			printf("%c written to file\n", temp);
+		}
+		printf("end writing\n");
+		fclose(f);
 
 		free(msg_data_start);
 	}	
