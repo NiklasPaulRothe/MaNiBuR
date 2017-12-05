@@ -159,17 +159,53 @@ int main(int argc, char **argv)
 
 	/*
 		sending file
-	*/
-		f = open("hallo.tar.gz", r);
+	*/	FILE *f;
+		f = fopen("hallo.tar.gz", "r");
 		
-		unsigned int packages = (file_size/(unsigned int)1492);
-		if (packages%1 != 0) {
-			packages = packages + 1;
-		}
+		int filesize = file_size("hallo.tar.gz");
+		int packages = filesize / 1487;
+		int tmp = filesize % 1487;
 
+		if (tmp != 0) {
+			printf("test\n");
+			(int)packages++;
+		}
+		
+		printf("%d\n", (int)packages);
+		printf("test\n");
+		exit(EXIT_FAILURE);
+		
 		unsigned int count;
-		for (count = 0, count < packages, count++) {
-			err = sendto(udp_socket, f, file_size, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
+		for (count = 0; count < packages; count++) {
+			printf("test\n");
+			char *msg;
+
+			msg[0] = DATA_T;
+			msg[4] = count;
+			count >>= 8;
+			msg[3] = count;
+			count >>= 8;
+			msg[2] = count;
+			count >>= 8;
+			msg[1] = count;
+			int i;
+			printf("test %s\n",msg);
+			exit(EXIT_FAILURE);
+			//int temp = fgetc(f);
+			//printf("%d\n", temp);
+			
+			for (i = 0; i < 1487; i++) {
+				printf("test\n");
+				exit(EXIT_FAILURE);
+				//if(fgetc(f) != EOF){
+				//	msg[i + 5] = fgetc(f);
+				//} else {
+				//	fclose(f);
+				//	break;
+				//}
+			}
+			
+			//err = sendto(udp_socket, msg, file_size, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 		}
 		
 
