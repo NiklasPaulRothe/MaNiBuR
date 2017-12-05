@@ -31,11 +31,9 @@ int main(int argc, char **argv)
 */
 	int port;
 	char *directory;
-	int package_size;
 	if (argc == 3) {
 		port = atoi(argv[1]);	
 		directory = argv[2];
-		package_size = 0;
 	} else {
 		printf("Not enough arguments given or to many arguments\n");
 		printf("Please use the program like this: \n");
@@ -97,14 +95,16 @@ int main(int argc, char **argv)
 	}
 
 /*
-	sending archive
+	sending archive (3)
 */
 	if (*request_msg == REQUEST_T) {
 		printf("REQUEST_T by receiver\n");
 		/*
 			sending header (2)
 		*/
-		char *msg;
+		char *msg_start, *msg;
+		msg_start = malloc(1492 * sizeof(char));
+		msg = msg_start;
 		struct sockaddr_in destination;
 		msg[0] = HEADER_T;
 		
@@ -137,8 +137,7 @@ int main(int argc, char **argv)
 		size >>= 8;
 		msg[3+strlen(directory)] = size;
 		size >>= 8;
-		printf("msg: %u\n", msg[11]);
-
+		printf("size in msg: %hhu %hhu %hhu %hhu\n", msg[3+strlen(directory)], msg[3+strlen(directory)+1], msg[3+strlen(directory)+2], msg[3+strlen(directory)+3]);
 		
 
 
@@ -157,9 +156,11 @@ int main(int argc, char **argv)
 			exit(EXIT_FAILURE);
 		}	
 
+		free(msg_start);
 	/*
 		sending file
-	*/	FILE *f;
+	*/	
+		FILE *f;
 		f = fopen("hallo.tar.gz", "r");
 		
 		int filesize = file_size("hallo.tar.gz");
@@ -167,48 +168,53 @@ int main(int argc, char **argv)
 		int tmp = filesize % 1487;
 
 		if (tmp != 0) {
-			printf("test\n");
+			printf("one package will not be full\n");
 			(int)packages++;
 		}
 		
-		printf("%d\n", (int)packages);
-		printf("test\n");
-		exit(EXIT_FAILURE);
+		printf("number of packages: %d\n", (int)packages);
+		//exit(EXIT_FAILURE);
 		
 		unsigned int count;
 		for (count = 0; count < packages; count++) {
-			printf("test\n");
-			char *msg;
+			printf("package %u of %i building and sending\n", count, (packages-1));
+			char *msg_data, *msg_data_start;
+			msg_data_start = malloc(1492 * sizeof(char));
+			msg_data = msg_data_start;
 
-			msg[0] = DATA_T;
-			msg[4] = count;
+			msg_data[0] = DATA_T;
+			msg_data[4] = count;
 			count >>= 8;
-			msg[3] = count;
+			msg_data[3] = count;
 			count >>= 8;
-			msg[2] = count;
+			msg_data[2] = count;
 			count >>= 8;
-			msg[1] = count;
-			int i;
-			printf("test %s\n",msg);
-			exit(EXIT_FAILURE);
+			msg_data[1] = count;
+			printf("number of packages in msg_data: %hhu\n", msg_data[4]);
+			printf("Header + package count for data package \n");
+			//exit(EXIT_FAILURE);
 			//int temp = fgetc(f);
 			//printf("%d\n", temp);
 			
+			int i;
 			for (i = 0; i < 1487; i++) {
-				printf("test\n");
-				exit(EXIT_FAILURE);
-				//if(fgetc(f) != EOF){
-				//	msg[i + 5] = fgetc(f);
-				//} else {
-				//	fclose(f);
-				//	break;
-				//}
+				//printf("test\n");
+				//exit(EXIT_FAILURE);
+				if(fgetc(f) != EOF){
+					printf("byte %i in package %u\n", i, count);
+					msg_data[i + 5] = fgetc(f);
+				} else {
+					printf("closing file\n");
+					fclose(f);
+					break;
+				}
 			}
-			
-			//err = sendto(udp_socket, msg, file_size, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
+			printf("msg: %s\n", msg_data_start);
+			err = sendto(udp_socket, msg_data_start, filesize, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
+			free(msg_data_start);
 		}
 		
-
+		err = sendto(udp_socket, "Ende", (strlen("Ende")*sizeof(char)), 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 
 	}
 
