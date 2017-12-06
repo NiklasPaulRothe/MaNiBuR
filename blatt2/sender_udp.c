@@ -25,12 +25,28 @@ int file_size(const char *filename) {
 
 int main(int argc, char **argv)
 {	
+/*
+	variables
+*/
+	// name of the temporary tar.gz file
+	char *zip_filename = "temp.tar.gz";
+	// port for the socket
+	int port;
+	// file path to the file which should be delivered
+	char *directory;
+	// used to store the udp socket
+	int udp_socket;
+	// err variable for several uses
+	int err;
+	// from holds the address of the receiver if a file is requested
+	struct sockaddr_in from;
+	unsigned int flen;
+
+
 
 /*
-	Getting params
+	getting params
 */
-	int port;
-	char *directory;
 	if (argc == 3) {
 		port = atoi(argv[1]);	
 		directory = argv[2];
@@ -38,27 +54,24 @@ int main(int argc, char **argv)
 		printf("Not enough arguments given or to many arguments\n");
 		printf("Please use the program like this: \n");
 		printf("./sender_udp <port for the sender> <path of the file> \n");
-		exit(EXIT_FAILURE);
 	}
 
 
 
 /* 
-	socket creation
+	creating a socket in udp_socket
 */
-	int udp_socket, err;
 	struct sockaddr_in addr;
 
 	udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
 	if (udp_socket < 0) { 
-		printf("Error by sender socket creation\n");
-		exit(EXIT_FAILURE);
+		printf("Error by sender socket creation\n");	
 	}
 
 
 
 /* 
-	binding the socket
+	binding the socket to the port given by the user
 */
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
@@ -68,16 +81,13 @@ int main(int argc, char **argv)
 	if (err < 0) {
 		printf("Error by sender bind\n");
 		close(udp_socket);
-		exit(EXIT_FAILURE);
 	}
 
 /*
-	compress file
+	compress the file
 */
-	//TODO: vernünftiges zippen!, rm Befehl beim closen beachten
 	char tar[22 + strlen(directory)];
-	sprintf(tar, "tar -czf hallo.tar.gz %s", directory);
-
+	sprintf(tar, "tar -czf %s %s", zip_filename, directory);
 	system(tar);
 
 /* 
@@ -85,17 +95,13 @@ int main(int argc, char **argv)
 */
 	char request_msg[64];
 	int len;
-	unsigned int flen;
-	struct sockaddr_in from;
 
 	flen = sizeof(struct sockaddr_in);
-
 	len = recvfrom(udp_socket, request_msg, sizeof(request_msg), 0, (struct sockaddr*) &from, &flen);
 
 	if (len < 0) {
 		printf("Error by sender receiving");
 		close(udp_socket);
-		exit(EXIT_FAILURE);
 	}
 
 /*
@@ -106,15 +112,14 @@ int main(int argc, char **argv)
 		/*
 			sending header (2)
 		*/
-		char *msg_start, *msg;
-		msg_start = malloc(1492 * sizeof(char));
-		msg = msg_start;
+		char *msg;
+		msg = malloc(1492 * sizeof(char));
 		struct sockaddr_in destination;
 		msg[0] = HEADER_T;
 		
 
 		/*
-			sending name length
+			sending length of the file name
 		*/
 		strcat(directory, ".tar.gz");
 		unsigned short temp = strlen(directory);
@@ -123,18 +128,16 @@ int main(int argc, char **argv)
 		msg[1] = temp;
 
 		/*
-			sending name
+			sending name of the file
 		*/
-		
-		printf("dir: %s\n", directory);
 		for (temp = 0; temp < strlen(directory); temp++) {
 			msg[temp+3] = directory[temp];
 		}
 
 		/*
-			sending file size
+			sending fsize of the file
 		*/
-		unsigned int size = file_size("hallo.tar.gz");
+		unsigned int size = file_size(zip_filename);
 		printf("size: %u\n", size);
 		msg[3+strlen(directory)+3] = size;
 		size >>= 8;
@@ -143,53 +146,56 @@ int main(int argc, char **argv)
 		msg[3+strlen(directory)+1] = size;
 		size >>= 8;
 		msg[3+strlen(directory)] = size;
-		size >>= 8;
-		printf("size in msg: %hhu %hhu %hhu %hhu\n", msg[3+strlen(directory)], msg[3+strlen(directory)+1], msg[3+strlen(directory)+2], msg[3+strlen(directory)+3]);
-		
+		size >>= 8;	
 
 
+		// creating the destination information from the received address
 		destination.sin_family = AF_INET;
 		destination.sin_port = from.sin_port;
 		destination.sin_addr.s_addr = inet_addr(inet_ntoa(from.sin_addr));
 
 
-		
+		// length of this message is build from one char for the type-id, one short for the length of the name
+		// the length of the string which holds the file name and a the int for the size of the file
 		int msg_len = sizeof(unsigned char) + sizeof(unsigned short) + strlen(directory) + sizeof(unsigned int);
-		printf("msg_len %d\n", msg_len);
 		err = sendto(udp_socket, msg, msg_len, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 		if (err < 0) {
 			printf("Error by sender sendto\n");
 			close(udp_socket);
-			exit(EXIT_FAILURE);
 		}	
+		free(msg);
 
-		free(msg_start);
 	/*
 		sending file
 	*/	
+		// open the already compressed file
 		FILE *f;
-		f = fopen("hallo.tar.gz", "r");
+		f = fopen(zip_filename, "r");
 		
-		int filesize = file_size("hallo.tar.gz");
+		// getting the file size to calculate the amount of packages that will be needed
+		int filesize = file_size(zip_filename);
 		int packages = filesize / 1487;
 		int tmp = filesize % 1487;
-
 		if (tmp != 0) {
-			printf("one package will not be full\n");
-			(int)packages++;
+			packages++;
 		}
 		
-		printf("number of packages: %d\n", (int)packages);
-		//exit(EXIT_FAILURE);
+
+		printf("number of packages: %d\n", packages);
 		
+		// loop to create every package calculated above
 		unsigned int count;
 		for (count = 0; count < packages; count++) {
 			printf("package %u of %i building and sending\n", count, (packages-1));
-			char *msg_data, *msg_data_start;
-			msg_data_start = malloc(1492 * sizeof(char));
-			msg_data = msg_data_start;
-			unsigned int temp_count = count;
+
+			// allocating memory for the message
+			char *msg_data;
+			msg_data = malloc(1492 * sizeof(char));
+
+			// setting the header
 			msg_data[0] = DATA_T;
+			// setting the sequence number
+			unsigned int temp_count = count;
 			msg_data[4] = temp_count;
 			temp_count >>= 8;
 			msg_data[3] = temp_count;
@@ -197,35 +203,29 @@ int main(int argc, char **argv)
 			msg_data[2] = temp_count;
 			temp_count >>= 8;
 			msg_data[1] = temp_count;
-			printf("number of packages in msg_data: %hhu\n", msg_data[4]);
-			printf("Header + package count for data package \n");
-			//exit(EXIT_FAILURE);
-			//int temp = fgetc(f);
-			//printf("%d\n", temp);
-			
+
+			// insertthe data
 			int i, temp;
 			for (i = 0; i < 1487; i++) {
-				printf("test\n");
-				//exit(EXIT_FAILURE);
+	
 				if((temp = fgetc(f)) != EOF){
 					msg_data[i + 5] = temp;
-					printf("byte %i in package %u is %c\n", i, count, msg_data_start[i + 5]);					
+					//printf("byte %i in package %u is %c\n", i, count, msg_data[i + 5]);					
 				} else {
 					printf("EOF reached!\n");
 					break;
 				}
 			}
-			//printf("msg: ");
-			//for (i = 5; i < filesize + 5; i++) {
-			//	printf("%c", msg_data[i]);
-			//}
-			//printf("\n");
-			//printf("msg: %s\n", msg_data_start);
-			err = sendto(udp_socket, msg_data_start, filesize + 5, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
-			free(msg_data_start);
+			// sending the message
+			err = sendto(udp_socket, msg_data, filesize + 5, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
+			if (err < 0) {
+				printf("Something went wrong with sending the package!\n");
+			}
+			free(msg_data);
 		}
-		printf("closing file\n");
+
 		fclose(f);
+
 		err = sendto(udp_socket, "Ende", (strlen("Ende")*sizeof(char)), 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 
 	}
@@ -235,8 +235,13 @@ int main(int argc, char **argv)
 /* 
 	closing the socket
 */
-	//TODO: an Dateinamen koppeln
-	system("rm hallo.tar.gz");
+	// removing the .tar.gz file	
+	char rm[3 + strlen(zip_filename)];
+	strcpy(rm, "rm ");
+	strcat(rm, zip_filename);
+	system(rm);
+
+	// closing the socket
 	err = close(udp_socket);
 	if (err < 0) {
 		printf("Error by sender socket close\n");
