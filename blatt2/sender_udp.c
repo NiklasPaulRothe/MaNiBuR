@@ -235,7 +235,7 @@ int main(int argc, char **argv)
 	closing the socket
 */
 	//TODO: an Dateinamen koppeln
-	//system("rm hallo.tar.gz");
+	system("rm hallo.tar.gz");
 	err = close(udp_socket);
 	if (err < 0) {
 		printf("Error by sender socket close\n");
