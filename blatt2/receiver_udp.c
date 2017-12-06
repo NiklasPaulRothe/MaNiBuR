@@ -117,14 +117,6 @@ int main(int argc, char **argv)
 	printf("Received %d bytes from host %s port %d: %s\n", len, inet_ntoa(from.sin_addr), ntohs(from.sin_port), name);
 	printf("Header: %hhu, Name-length: %hu, File_size: %u \n", head, name_len, file_size);
 
-/*
-	create file
-*/
-	char truncate[name_len+22];
-	sprintf(truncate, "truncate -s 0 received/%s", name);
-
-	system(truncate);
-
 
 /*
 	receiving file (4)
@@ -132,6 +124,11 @@ int main(int argc, char **argv)
 	printf("receiving data start\n");
 	unsigned int needed_number = 0;
 	unsigned int file_pointer = 0;
+	char filepath[name_len+9];
+	sprintf(filepath, "received/%s", name);
+	FILE *f;
+	f = fopen(filepath, "w");
+	int file_position = 0;
 	while (1) {
 		/*
 			receiving a packet
@@ -139,9 +136,17 @@ int main(int argc, char **argv)
 		printf("package %u is needed now\n", needed_number);
 		int data_len;
 		char *msg_data, *msg_data_start;
-		msg_data_start = malloc(1492 * sizeof(char)); //TODO: richtige size
+		if (file_size > 1487) {
+			msg_data_start = malloc(1492 * sizeof(char)); 
+			file_size = file_size - 1487;
+		} else {
+			msg_data_start = malloc(file_size * sizeof(char));
+		}
 		msg_data = msg_data_start;
-		data_len = recvfrom(udp_socket, msg_data, sizeof(msg_data)+1, 0, (struct sockaddr*) &from, &flen);
+		data_len = recvfrom(udp_socket, msg_data, (1492 * sizeof(char) + 1), 0, (struct sockaddr*) &from, &flen);
+		printf("data_len: %d\n", data_len);
+		
+		printf("\n");
 		if (data_len < 0) {
 			printf("Error by receiver receiving\n"); //(1)
 		}
@@ -149,7 +154,7 @@ int main(int argc, char **argv)
 			checks if packet is a Data packet or not
 		*/
 		if (msg_data[0] != DATA_T) {
-			free(msg_data_start);		
+			//free(msg_data_start);		
 			printf("not a data package\n"); //(1)
 			break;			
 		}
@@ -174,24 +179,24 @@ int main(int argc, char **argv)
 			putting data into file
 		*/
 
-		char filepath[name_len+9];
-		sprintf(filepath, "received/%s", name);
-		FILE *f;
-		f = fopen(filepath, "a");
 
 		int i;
 		printf("start writing\n");		
 		printf("msg_data_start is %i long\n", strlen(msg_data_start));
-		for (i = 5; i < strlen(msg_data_start); i++) {
-			char temp = fputc(msg_data_start[i], f);
-			printf("%c written to file\n", temp);
+		for (i = 5; i < data_len; i++) {
+			int temp = fputc(msg_data_start[i], f);
+			file_position++;
+			if (file_position >= file_size) {
+				break;
+			}
+			//printf("%c written to file\n", temp);
 		}
 		printf("end writing\n");
-		fclose(f);
+		
 
-		free(msg_data_start);
+		//free(msg_data_start);
 	}	
-
+	fclose(f);
 
 
 /* 

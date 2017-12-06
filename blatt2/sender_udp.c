@@ -115,6 +115,7 @@ int main(int argc, char **argv)
 		/*
 			sending name length
 		*/
+		strcat(directory, ".tar.gz");
 		unsigned short temp = strlen(directory);
 		msg[2] = temp;
 		temp >>= 8;
@@ -123,6 +124,8 @@ int main(int argc, char **argv)
 		/*
 			sending name
 		*/
+		
+		printf("dir: %s\n", directory);
 		for (temp = 0; temp < strlen(directory); temp++) {
 			msg[temp+3] = directory[temp];
 		}
@@ -184,39 +187,44 @@ int main(int argc, char **argv)
 			char *msg_data, *msg_data_start;
 			msg_data_start = malloc(1492 * sizeof(char));
 			msg_data = msg_data_start;
-
+			unsigned int temp_count = count;
 			msg_data[0] = DATA_T;
-			msg_data[4] = count;
-			count >>= 8;
-			msg_data[3] = count;
-			count >>= 8;
-			msg_data[2] = count;
-			count >>= 8;
-			msg_data[1] = count;
+			msg_data[4] = temp_count;
+			temp_count >>= 8;
+			msg_data[3] = temp_count;
+			temp_count >>= 8;
+			msg_data[2] = temp_count;
+			temp_count >>= 8;
+			msg_data[1] = temp_count;
 			printf("number of packages in msg_data: %hhu\n", msg_data[4]);
 			printf("Header + package count for data package \n");
 			//exit(EXIT_FAILURE);
 			//int temp = fgetc(f);
 			//printf("%d\n", temp);
 			
-			int i;
+			int i, temp;
 			for (i = 0; i < 1487; i++) {
-				//printf("test\n");
+				printf("test\n");
 				//exit(EXIT_FAILURE);
-				if(fgetc(f) != EOF){
-					msg_data[i + 5] = fgetc(f);
-					printf("byte %i in package %u is %c\n", i, count, msg_data[i + 5]);					
+				if((temp = fgetc(f)) != EOF){
+					msg_data[i + 5] = temp;
+					printf("byte %i in package %u is %c\n", i, count, msg_data_start[i + 5]);					
 				} else {
-					printf("closing file\n");
-					fclose(f);
+					printf("EOF reached!\n");
 					break;
 				}
 			}
-			printf("msg: %s\n", msg_data_start);
-			err = sendto(udp_socket, msg_data_start, filesize, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
+			//printf("msg: ");
+			//for (i = 5; i < filesize + 5; i++) {
+			//	printf("%c", msg_data[i]);
+			//}
+			//printf("\n");
+			//printf("msg: %s\n", msg_data_start);
+			err = sendto(udp_socket, msg_data_start, filesize + 5, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 			free(msg_data_start);
 		}
-		
+		printf("closing file\n");
+		fclose(f);
 		err = sendto(udp_socket, "Ende", (strlen("Ende")*sizeof(char)), 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 
 	}
@@ -227,7 +235,7 @@ int main(int argc, char **argv)
 	closing the socket
 */
 	//TODO: an Dateinamen koppeln
-	system("rm hallo.tar.gz");
+	//system("rm hallo.tar.gz");
 	err = close(udp_socket);
 	if (err < 0) {
 		printf("Error by sender socket close\n");
