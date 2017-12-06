@@ -32,7 +32,6 @@ int main(int argc, char **argv)
 	socket creation
 */
 	int udp_socket, err;
-	struct sockaddr_in addr;
 	udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
 	if (udp_socket < 0) { 
 		printf("Error by receiver socket creation\n"); //(1)
@@ -63,7 +62,8 @@ int main(int argc, char **argv)
 	receiving header (2)
 */
 	char msg[32];
-	int len, flen;
+	int len;
+	unsigned int flen;
 	struct sockaddr_in from;
 
 	flen = sizeof(struct sockaddr_in);
@@ -124,7 +124,6 @@ int main(int argc, char **argv)
 */
 	printf("receiving data start\n");
 	unsigned int needed_number = 0;
-	unsigned int file_pointer = 0;
 	char filepath[name_len+strlen(name_prefix)];
 	sprintf(filepath, "%s%s", name_prefix, name);
 	FILE *f;
@@ -185,12 +184,11 @@ int main(int argc, char **argv)
 		int i;
 		printf("start writing\n");		
 		for (i = 5; i < data_len; i++) {
-			int temp = fputc(msg_data[i], f);
+			fputc(msg_data[i], f);
 			file_position++;
 			if (file_position >= file_size) {
 				break;
 			}
-			//printf("%c written to file\n", temp);
 		}
 		printf("end writing\n");
 		

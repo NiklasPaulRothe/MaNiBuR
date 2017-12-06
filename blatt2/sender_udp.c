@@ -84,7 +84,8 @@ int main(int argc, char **argv)
 	receiving request (1)
 */
 	char request_msg[64];
-	int len, flen;
+	int len;
+	unsigned int flen;
 	struct sockaddr_in from;
 
 	flen = sizeof(struct sockaddr_in);
