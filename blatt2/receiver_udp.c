@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 
 #include "Aufgabe2.h"
+#include "Aufgabe2_additional.h"
 
 int main(int argc, char **argv)
 {	
@@ -20,6 +21,9 @@ int main(int argc, char **argv)
 	int err;
 	// folder in which the data will be stored
 	char *name_prefix = "received/";
+	// used to store the sha value
+	char sha_input[64];
+
 
 /*
 	getting params
@@ -188,7 +192,14 @@ int main(int argc, char **argv)
 
 		// checks if packet is a DATA_T packet or not
 
-		if (msg_data[0] != DATA_T) {
+		if (msg_data[0] == SHA512_T) {
+			// packet is the sha value packet and the value will be stored
+			int i;
+			for	(i = 1; i < 64; i++) {				
+				sha_input[i-1] = msg_data[i];
+			}	
+			break;
+		} else if (msg_data[0] != DATA_T) {
 			free(msg_data);		
 			printf("not a data package\n"); //(1)
 			break;			
@@ -232,6 +243,25 @@ int main(int argc, char **argv)
 		free(msg_data);
 	}	
 	fclose(f);
+
+/*
+	handle sha512 value
+*/
+	unsigned char sha_value[64];
+	create_sha512(filepath, sha_value);
+
+	char sha_answer[2];
+	sha_answer[0] = SHA512_CMP_T;
+
+	if (strcmp(sha_value, sha_input) == 0) {		
+		sha_answer[1] = SHA512_CMP_OK;
+		printf("gleich\n");
+	} else {
+		sha_answer[1] = SHA512_CMP_ERROR;
+		printf("nicht gleich\n");
+	}
+
+	err = sendto(udp_socket, sha_answer, 2, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 
 
 /* 

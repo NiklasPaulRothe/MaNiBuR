@@ -1,11 +1,11 @@
-default:sender_udp.c receiver_udp.c Aufgabe2.h
-	gcc -o sender_udp sender_udp.c
-	gcc -o receiver_udp receiver_udp.c
+default:sender_udp.c receiver_udp.c Aufgabe2.h Aufgabe2_additional.h
+	gcc -o sender_udp sender_udp.c -lssl -lcrypto
+	gcc -o receiver_udp receiver_udp.c -lssl -lcrypto
 	mkdir received
 
-sender_udp: sender_udp.c Aufgabe2.h
+sender_udp: sender_udp.c Aufgabe2.h Aufgabe2_additional.h
 	gcc -o sender_udp sender_udp.c
-receiver_udp: receiver_udp.c Aufgabe2.h
+receiver_udp: receiver_udp.c Aufgabe2.h Aufgabe2_additional.h
 	gcc -o receiver_udp receiver_udp.c
 
 clean:

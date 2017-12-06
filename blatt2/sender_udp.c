@@ -6,22 +6,11 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <string.h>
-#include <sys/stat.h>
 
 #include "Aufgabe2.h"
+#include "Aufgabe2_additional.h"
 
-//code inspired by Ted Percival from stackoverflow
-//https://stackoverflow.com/questions/8236/how-do-you-determine-the-size-of-a-file-in-c
-int file_size(const char *filename) {
-	struct stat st;
 
-	if (stat(filename, &st) == 0) {
-		return st.st_size;
-	}
-
-	return -1;
-}
 
 int main(int argc, char **argv)
 {	
@@ -226,7 +215,44 @@ int main(int argc, char **argv)
 
 		fclose(f);
 
-		err = sendto(udp_socket, "Ende", (strlen("Ende")*sizeof(char)), 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
+		
+		/*
+			sending the sha-512 value (4)
+		*/
+		unsigned char msg_sha[65];
+		// setting the type-id to SHA512_T
+		msg_sha[0] = SHA512_T;
+
+		// create sha-512 value
+		char sha512[64];
+		create_sha512(zip_filename, sha512);
+		int i;
+		for (i = 0; i < 64; i++) {
+			msg_sha[i+1] = sha512[i];
+		}
+
+		// Sending the SHA Value
+		err = sendto(udp_socket, msg_sha, sizeof(msg_sha) + 1, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
+		// catching the error
+		if (err < 0) {
+			printf("Error by sender sha512\n"); //(1)
+		}
+
+/*
+	Receiving sha anwer
+*/	
+		char sha_answer[2];
+		err = recvfrom(udp_socket, sha_answer, (2 * sizeof(char)), 0, (struct sockaddr*) &from, &flen);
+		if (sha_answer[0] == SHA512_CMP_T) {
+			if (sha_answer[1] == SHA512_CMP_OK) {
+				printf("Übertragung erfolgreich!\n");
+			} else {
+				printf("Übertragung fehlgeschlagen!\n");
+			}
+		} else {
+			// TODO: FEHLERBEHANDLUNG
+			printf("Wrong packet as answer!\n");
+		}
 
 	}
 
@@ -239,7 +265,7 @@ int main(int argc, char **argv)
 	char rm[3 + strlen(zip_filename)];
 	strcpy(rm, "rm ");
 	strcat(rm, zip_filename);
-	system(rm);
+	//system(rm);
 
 	// closing the socket
 	err = close(udp_socket);
@@ -250,3 +276,5 @@ int main(int argc, char **argv)
 	printf("sender_udp finished!\n");
 
 }
+
+//TODO: Error Handling wenn files nicht geöffnet werden können
