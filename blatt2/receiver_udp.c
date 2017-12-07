@@ -89,39 +89,14 @@ int main(int argc, char **argv)
 
 
 	/*
-		combining msg[1] and msg[2] to build the unsigned short for the length
-		of the name
+		extracting name_len, name and size
 	*/
+	char *msg_tmp;
+	msg_tmp = msg + 1;
 	unsigned short name_len = 0;
-	name_len = name_len | msg[1];
-	name_len <<= 8;
-	name_len = name_len | msg[2];
-	
-	/*
-		extracting the filename and create a string
-	*/
-	char *name = malloc((name_len+1) * sizeof(char));
-	unsigned short index;
-	for (index = 0; index < name_len; index++) {
-		name[index] = msg[index+3];
-	}
-	name[index] = '\0';
-
-	/*
-		combining the last 4 bytes to get the size of the file
-	*/
-	index = index + 3;
-	unsigned int file_size = 0;
-	file_size = file_size | (unsigned char)msg[index];
-	file_size <<= 8;
-	index++;
-	file_size = file_size | (unsigned char)msg[index];
-	file_size <<= 8;
-	index++;
-	file_size = file_size | (unsigned char)msg[index];
-	file_size <<= 8;
-	index++;
-	file_size = file_size | (unsigned char)msg[index];
+	name_len = extract_header_name_len(msg_tmp);
+	char *name = malloc((name_len + 1) * sizeof(char));
+	unsigned int file_size = extract_header_name_file_size(msg_tmp, name, name_len);
 
 	printf("Received %d bytes from host %s port %d: %s\n", len, inet_ntoa(from.sin_addr), ntohs(from.sin_port), name);
 	printf("Header: %hhu, Name-length: %hu, File_size: %u \n", head, name_len, file_size);

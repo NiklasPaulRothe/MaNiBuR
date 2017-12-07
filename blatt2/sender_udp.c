@@ -97,37 +97,11 @@ int main(int argc, char **argv)
 		struct sockaddr_in destination;
 		msg[0] = HEADER_T;
 		
+		char *msg_tmp;
+		msg_tmp = msg + 1; 
 
-		/*
-			sending length of the file name
-		*/
-		strcat(directory, ".tar.gz");
-		unsigned short temp = strlen(directory);
-		msg[2] = temp;
-		temp >>= 8;
-		msg[1] = temp;
-
-		/*
-			sending name of the file
-		*/
-		for (temp = 0; temp < strlen(directory); temp++) {
-			msg[temp+3] = directory[temp];
-		}
-
-		/*
-			sending fsize of the file
-		*/
-		unsigned int size = file_size(zip_filename);
-		printf("size: %u\n", size);
-		msg[3+strlen(directory)+3] = size;
-		size >>= 8;
-		msg[3+strlen(directory)+2] = size;
-		size >>= 8;
-		msg[3+strlen(directory)+1] = size;
-		size >>= 8;
-		msg[3+strlen(directory)] = size;
-		size >>= 8;	
-
+		create_header_msg(msg_tmp, directory, zip_filename);
+		
 
 		// creating the destination information from the received address
 		destination.sin_family = AF_INET;

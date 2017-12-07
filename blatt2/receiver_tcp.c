@@ -63,10 +63,22 @@ int main(int argc, char **argv)
 	Waiting for message
 */
 	unsigned int len;
-	char buffer[64];
-	len = read(tcp_socket, buffer, 64);
+	char msg[64];
+	len = read(tcp_socket, msg, 64);
 
-	printf("%s\n", buffer);
+	/*
+		extracting name_len, name and size
+	*/
+
+	unsigned short name_len = 0;
+	name_len = extract_header_name_len(msg);
+	char *name = malloc((name_len + 1) * sizeof(char));
+	unsigned int file_size = extract_header_name_file_size(msg, name, name_len);
+
+	printf("Received %u bytes: %s\n", len, name);
+	printf("Name-length: %hu, File_size: %u \n", name_len, file_size);
+
+
 
 /* 
 	closing the socket

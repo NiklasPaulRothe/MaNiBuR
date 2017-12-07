@@ -83,11 +83,13 @@ int main(int argc, char **argv)
 	sending first message
 */
 
-	char *msg = "This went very successfull! Congrats!";
+	char *msg;
+	msg = malloc(1492 * sizeof(char));
+	create_header_msg(msg, directory, zip_filename);
 
-	unsigned int len;
-	len = write(tcp_socket2, msg, strlen(msg));
-
+	int len;
+	len = write(tcp_socket2, msg, 1492 * sizeof(char)); // TODO: weniger bytes senden!
+	printf("Send bytes: %d\n", len);
 
 
 /*
