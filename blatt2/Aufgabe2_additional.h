@@ -1,7 +1,14 @@
 #ifndef AUFGABE_2_ADDITIONAL_H_
 #define AUFGABE_2_ADDITIONAL_H_
 
-
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <arpa/inet.h>
 #include <openssl/sha.h>
 #include <sys/stat.h>
 
