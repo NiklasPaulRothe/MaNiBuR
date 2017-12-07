@@ -60,14 +60,14 @@ int main(int argc, char **argv)
 	}
 
 /*
-	Waiting for message
+	Waiting for message (2)
 */
 	unsigned int len;
 	char msg[64];
 	len = read(tcp_socket, msg, 64);
 
 	/*
-		extracting name_len, name and size
+		extracting name_len, name and size (2)
 	*/
 
 	unsigned short name_len = 0;
@@ -78,6 +78,74 @@ int main(int argc, char **argv)
 	printf("Received %u bytes: %s\n", len, name);
 	printf("Name-length: %hu, File_size: %u \n", name_len, file_size);
 
+/*
+	receiving file (4)
+*/
+	printf("receiving data start\n");
+
+	// a position in the new file which is needed if multiple packets were send
+	int file_position = 0;
+	// a temporary file_size to save the original
+	int file_size_temp = file_size;
+
+	// the filepath to the created file
+	char filepath[name_len + strlen(name_prefix)];
+	sprintf(filepath, "%s%s", name_prefix, name);
+	// free memory of name variable
+	free(name);
+
+	// open the file
+	FILE *f;
+	f = fopen(filepath, "w");
+
+	int end_of_file = 0;
+	while(end_of_file == 0) {
+		
+		// holds the length of the actual packet
+		int packet_len;
+		// holds the data of the actual packet
+		char *msg_data;
+
+		// allocating memory for the expected data and receiving it
+		if (file_size_temp > 1492) {
+			// if packet is at max size (probably more coming)
+			msg_data = malloc(1492 * sizeof(char)); 
+			file_size_temp = file_size_temp - 1492;
+			packet_len = read(tcp_socket, msg_data, (1492 * sizeof(char)));
+		} else {
+			// if packet isnt at max size
+			msg_data = malloc((file_size_temp) * sizeof(char));
+			packet_len = read(tcp_socket, msg_data, ((file_size_temp) * sizeof(char)));
+		}
+
+		// if the packet_len is negative, smth went wrong by receiving the packet
+		if (packet_len < 0) {
+			printf("Error by receiver receiving\n"); //(1)
+		}
+
+		printf("packet_len: %d\n", packet_len);
+
+	/*
+		putting data into file
+	*/
+		int i;
+		printf("start writing\n");		
+		for (i = 0; i < packet_len; i++) {
+			printf("Byte #: %d - %c \n", i, msg_data[i]);
+			fputc(msg_data[i], f);
+			file_position++;			
+			if (file_position >= file_size) {
+				printf("EOF \n");
+				end_of_file = 1;
+				break;
+			}
+		}
+		printf("end writing\n");
+		
+		free(msg_data);
+
+	}
+	fclose(f);
 
 
 /* 

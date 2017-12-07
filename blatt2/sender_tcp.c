@@ -60,6 +60,14 @@ int main(int argc, char **argv)
 		printf("binding successfull!\n");
 	}
 /*
+	compress the file
+*/
+	char tar[22 + strlen(directory)];
+	sprintf(tar, "tar -czf %s %s", zip_filename, directory);
+	system(tar);
+
+
+/*
 	listening for connection
 */
 
@@ -80,7 +88,7 @@ int main(int argc, char **argv)
 	} 
 
 /*
-	sending first message
+	sending first message (2)
 */
 
 	char *msg;
@@ -90,6 +98,55 @@ int main(int argc, char **argv)
 	int len;
 	len = write(tcp_socket2, msg, 1492 * sizeof(char)); // TODO: weniger bytes senden!
 	printf("Send bytes: %d\n", len);
+
+	free(msg);
+
+
+/*
+	sending data (3)
+*/
+
+	// open the already compressed file
+	FILE *f;
+	f = fopen(zip_filename, "r");
+	
+	// getting the file size to calculate the amount of packages that will be needed
+	int filesize = file_size(zip_filename);
+	int packages = filesize / 1492;
+	int tmp = filesize % 1492;
+	if (tmp != 0) {
+		packages++;
+	}
+
+	printf("number of packages: %d\n", packages);
+		
+	// loop to create every package calculated above
+	unsigned int count;
+	for (count = 0; count < packages; count++) {
+		printf("package %u of %i building and sending\n", count, (packages-1));
+			// allocating memory for the message
+		char *msg_data;
+		msg_data = malloc(1492 * sizeof(char));
+		// insert the data
+		int i, temp;
+		for (i = 0; i < 1492; i++) {
+			if((temp = fgetc(f)) != EOF){
+				msg_data[i] = temp;
+				printf("byte %i in package %u is %c\n", i, count, msg_data[i]);					
+			} else {
+				printf("EOF reached!\n");
+				break;
+			}
+		}
+		// sending the message
+		err = write(tcp_socket2, msg_data, 1492 * sizeof(char));
+		if (err < 0) {
+			printf("Something went wrong with sending the package!\n");
+		}
+		printf("Bytes send: %d\n", err);
+		free(msg_data);
+	}
+	fclose(f);
 
 
 /*

@@ -158,7 +158,7 @@ int main(int argc, char **argv)
 			temp_count >>= 8;
 			msg_data[1] = temp_count;
 
-			// insertthe data
+			// insert the data
 			int i, temp;
 			for (i = 0; i < 1487; i++) {
 	
