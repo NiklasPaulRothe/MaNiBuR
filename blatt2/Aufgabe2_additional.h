@@ -56,14 +56,13 @@ int create_sha512(char* filename, unsigned char* storage)
 
 char handle_sha512(char* filepath, unsigned char* received_sha) {
 	char* sha_value;
-	printf("path: %s\n", filepath);
 	create_sha512(filepath, sha_value);
 
 	if (strcmp(sha_value, received_sha) == 0) {
-		printf("gleich\n");		
+		printf("Übertragung erfolgreich\n");		
 		return SHA512_CMP_OK;
 	} else {
-		printf("nicht gleich\n");
+		printf("Übertragung fehlgeschlagen\n");
 		return SHA512_CMP_ERROR;
 	}
 }
@@ -75,7 +74,6 @@ void create_header_msg(char *msg, char *directory, char *zip_filename)
 	*/
 	strcat(directory, ".tar.gz");
 	unsigned short temp = strlen(directory);
-	printf("Name length in additional.h: %hu\n", temp);
 	msg[1] = temp;
 	temp >>= 8;
 	msg[0] = temp;
@@ -83,7 +81,6 @@ void create_header_msg(char *msg, char *directory, char *zip_filename)
 	/*
 		sending name of the file
 	*/
-	printf("Name in additional.h: %s\n", directory);
 	for (temp = 0; temp < strlen(directory); temp++) {
 		msg[temp+2] = directory[temp];
 	}
@@ -92,7 +89,7 @@ void create_header_msg(char *msg, char *directory, char *zip_filename)
 		sending fsize of the file
 	*/
 	unsigned int size = file_size(zip_filename);
-	printf("Filesize in additional.h: %u\n", size);
+	printf("Filesize: %u\n", size);
 	msg[2+strlen(directory)+3] = size;
 	size >>= 8;
 	msg[2+strlen(directory)+2] = size;
@@ -116,7 +113,6 @@ unsigned short extract_header_name_len(char *msg)
 	name_len = name_len | msg[0];
 	name_len <<= 8;
 	name_len = name_len | msg[1];
-	printf("Name length in additional.h: %hu\n", name_len);
 	return name_len;
 }
 
@@ -135,7 +131,6 @@ unsigned int extract_header_name_file_size(char *msg, char *name, unsigned short
 	}
 	name[index] = '\0';
 
-	printf("Name in additional.h: %s\n", name);
 	/*
 		combining the last 4 bytes to get the size of the file
 	*/
@@ -151,7 +146,6 @@ unsigned int extract_header_name_file_size(char *msg, char *name, unsigned short
 	file_size <<= 8;
 	index++;
 	file_size = file_size | (unsigned char)msg[index];
-	printf("Filesize in additional.h: %u\n", file_size);
 	return file_size;
 }
 

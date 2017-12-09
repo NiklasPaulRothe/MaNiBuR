@@ -38,10 +38,10 @@ int main(int argc, char **argv)
 
 	tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (tcp_socket < 0) { 
-		printf("Error by sender socket creation\n");	
-	} else {
-		printf("socket creation successfull!\n");
+		printf("Error by sender socket creation\n");
+		exit(0);	
 	}
+
 /*
 	connecting to sender
 */
@@ -55,8 +55,8 @@ int main(int argc, char **argv)
 	err = connect(tcp_socket, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 	if (err < 0) {
 		printf("connecting error!\n");
-	} else {
-		printf("connecting successfull!\n");
+		close(tcp_socket);
+		exit(0);
 	}
 
 /*
@@ -75,13 +75,10 @@ int main(int argc, char **argv)
 	char *name = malloc((name_len + 1) * sizeof(char));
 	unsigned int file_size = extract_header_name_file_size(msg, name, name_len);
 
-	printf("Received %u bytes: %s\n", len, name);
-	printf("Name-length: %hu, File_size: %u \n", name_len, file_size);
 
 /*
 	receiving file (4)
 */
-	printf("receiving data start\n");
 	struct timeval timer;
 	timer.tv_sec = 10;
 	timer.tv_usec = 0;
@@ -94,6 +91,7 @@ int main(int argc, char **argv)
 
 	// the filepath to the created file
 	char filepath[name_len + strlen(name_prefix)];
+	printf("File: %s\n", name);
 	sprintf(filepath, "%s%s", name_prefix, name);
 	// free memory of name variable
 	free(name);
@@ -101,6 +99,7 @@ int main(int argc, char **argv)
 	// open the file
 	FILE *f;
 	f = fopen(filepath, "w");
+	printf("Filesize: %hu\n", file_size);
 
 	int end_of_file = 0;
 	int count_packages = 0;
@@ -112,17 +111,17 @@ int main(int argc, char **argv)
 		packet_len = read(tcp_socket, msg_data + bytesread, file_size - bytesread);
 		if (packet_len < 0) {
 			printf("Error by receiver receiving\n"); //(1)
+			close(tcp_socket);
+			exit(0);
 		}
 		bytesread += packet_len;
 
 	}
-	int i;
-	printf("start writing\n");		
+	//write message in new file
+	int i;	
 	for (i = 0; i < file_size; i++) {
-		printf("Byte #: %d - %c \n", i, msg_data[i]);
 		fputc(msg_data[i], f);		
 	}
-	printf("end writing\n");
 	free(msg_data);
 	fclose(f);
 
@@ -135,14 +134,21 @@ int main(int argc, char **argv)
 	err = read(tcp_socket, sha512, 64);
 	if (err < 0){
 		printf("Error by receiver receiving sha512 value\n");
+		close(tcp_socket);
+		exit(0);
 	}
 
+/*
+	compare SHA512 value and send compare value
+*/
 	char* cmp;
 	cmp = malloc(sizeof(char));
 	cmp[0] = handle_sha512(filepath, sha512);
 	err= write(tcp_socket, cmp , 1);
 	if (err < 0) {
 		printf("error sending compare value\n");
+		close(tcp_socket);
+		exit(0);
 	}
 	free(cmp);
 
@@ -156,7 +162,5 @@ int main(int argc, char **argv)
 	if (err < 0) {
 		printf("Error by sender socket close\n");
 	} 
-
-	printf("receiver_tcp finished!\n");
 
 }

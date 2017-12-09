@@ -34,6 +34,9 @@ int main(int argc, char **argv)
 		printf("./sender_udp <port for the sender> <path of the file> \n");
 	}
 
+	//display file name
+	printf("File: %s\n", directory);
+
 /* 
 	creating a socket in tcp_socket
 */
@@ -41,10 +44,10 @@ int main(int argc, char **argv)
 
 	tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (tcp_socket < 0) { 
-		printf("Error by sender socket creation\n");	
-	} else {
-		printf("socket creation successfull!\n");
+		printf("Error by sender socket creation\n");
+		exit(0);	
 	}
+
 /* 
 	binding the socket to the port given by the user
 */
@@ -56,9 +59,9 @@ int main(int argc, char **argv)
 	if (err < 0) {
 		printf("Error by sender bind\n");
 		close(tcp_socket);
-	} else {
-		printf("binding successfull!\n");
+		exit(0);
 	}
+
 /*
 	compress the file
 */
@@ -74,8 +77,8 @@ int main(int argc, char **argv)
 	err = listen(tcp_socket, 1);
 	if (err < 0) {
 		printf("listen failed!\n");
-	} else {
-		printf("listen successfull!\n");
+		close(tcp_socket);
+		exit(0);
 	}
 /*
 	accepting a connection
@@ -83,9 +86,11 @@ int main(int argc, char **argv)
 	tcp_socket2 = accept(tcp_socket, (struct sockaddr *) &from, &flen);
 	if (tcp_socket2 < 0) {
 		printf("accept failed!\n");
-	} else {
-		printf("Received connection from %s!\n", inet_ntoa(from.sin_addr));
-	} 
+		close(tcp_socket);
+		exit(0);
+	}
+
+	//set waiting time for socket
 	struct timeval timer;
 	timer.tv_sec = 10;
 	timer.tv_usec = 0;
@@ -101,7 +106,6 @@ int main(int argc, char **argv)
 
 	int len;
 	len = write(tcp_socket2, msg, 1492 * sizeof(char));
-	printf("Send bytes: %d\n", len);
 
 	free(msg);
 
@@ -121,24 +125,19 @@ int main(int argc, char **argv)
 	if (tmp != 0) {
 		packages++;
 	}
-
-	printf("number of packages: %d\n", packages);
 		
 	// loop to create every package calculated above
 	unsigned int count;
 	for (count = 0; count < packages; count++) {
-		//printf("package %u of %i building and sending\n", count, (packages-1));
-			// allocating memory for the message
+		// allocating memory for the message
 		char *msg_data;
 		msg_data = malloc(1492 * sizeof(char));
 		// insert the data
 		int byte_count, temp;
 		for (byte_count = 0; byte_count < 1492; byte_count++) {
 			if((temp = fgetc(f)) != EOF){
-				msg_data[byte_count] = temp;
-				printf("byte %i in package %u is %c\n", byte_count, count, msg_data[byte_count]);					
+				msg_data[byte_count] = temp;					
 			} else {
-				printf("EOF reached!\n");
 				break;
 			}
 		}
@@ -146,8 +145,10 @@ int main(int argc, char **argv)
 		err = write(tcp_socket2, msg_data, byte_count * sizeof(char));
 		if (err < 0) {
 			printf("Something went wrong with sending the package!\n");
+			close(tcp_socket2);
+			close(tcp_socket);
+			exit(0);
 		}
-		printf("Bytes send: %d\n", err);
 		free(msg_data);
 	}
 	fclose(f);
@@ -162,8 +163,14 @@ int main(int argc, char **argv)
 	err = write(tcp_socket2, sha512, 64 * sizeof(char));
 	if (err < 0) {
 			printf("Error by sender sha512\n");
+			close(tcp_socket2);
+			close(tcp_socket);
+			exit(0);
 	}
 
+/*
+	receive SHA512 compare value and evaluate data transfer
+*/
 	char* cmp;
 	cmp = malloc(sizeof(char));
 	err = read(tcp_socket2, cmp, sizeof(char));
@@ -173,6 +180,7 @@ int main(int argc, char **argv)
 		printf("Übertragung fehlgeschlagen!\n");
 	}
 	free(cmp);
+	//wait until socket is empty before closing
 	char* temp;
 	temp = malloc(sizeof(char));
 	while ((err = read(tcp_socket2, temp, sizeof(char))) > 0) {
@@ -203,6 +211,5 @@ int main(int argc, char **argv)
 		printf("Error by initial socket close\n");
 	} 
 
-	printf("sender_tcp finished!\n");
 
 }

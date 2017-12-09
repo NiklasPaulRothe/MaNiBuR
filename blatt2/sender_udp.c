@@ -35,6 +35,7 @@ int main(int argc, char **argv)
 		printf("Please use the program like this: \n");
 		printf("./sender_udp <port for the sender> <path of the file> \n");
 	}
+	printf("Filename: %s\n", directory);
 
 
 
@@ -45,7 +46,8 @@ int main(int argc, char **argv)
 
 	udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
 	if (udp_socket < 0) { 
-		printf("Error by sender socket creation\n");	
+		printf("Error by sender socket creation\n");
+		exit(0);	
 	}
 	struct timeval timer;
 	timer.tv_sec = 10;
@@ -65,6 +67,7 @@ int main(int argc, char **argv)
 	if (err < 0) {
 		printf("Error by sender bind\n");
 		close(udp_socket);
+		exit(0);
 	}
 
 /*
@@ -86,13 +89,13 @@ int main(int argc, char **argv)
 	if (len < 0) {
 		printf("Error by sender receiving");
 		close(udp_socket);
+		exit(0);
 	}
 
 /*
 	sending archive (3)
 */
 	if (*request_msg == REQUEST_T) {
-		printf("REQUEST_T by receiver\n");
 		/*
 			sending header (2)
 		*/
@@ -120,6 +123,7 @@ int main(int argc, char **argv)
 		if (err < 0) {
 			printf("Error by sender sendto\n");
 			close(udp_socket);
+			exit(0);
 		}	
 		free(msg);
 
@@ -138,15 +142,12 @@ int main(int argc, char **argv)
 			packages++;
 		}
 		
-
-		printf("number of packages: %d\n", packages);
 		
 		// loop to create every package calculated above
 		unsigned int count;
 		char *sha_string;
 		sha_string = malloc(filesize * sizeof(char));
 		for (count = 0; count < packages; count++) {
-			printf("package %u of %i building and sending\n", count, (packages-1));
 
 			// allocating memory for the message
 			char *msg_data;
@@ -176,7 +177,6 @@ int main(int argc, char **argv)
 					//printf("sha string: %c\n", sha_string[i + (1487 * count)]);
 					//printf("byte %i in package %u is %c\n", i, count, msg_data[i + 5]);					
 				} else {
-					printf("EOF reached!\n");
 					break;
 				}
 			}
@@ -184,6 +184,8 @@ int main(int argc, char **argv)
 			err = sendto(udp_socket, msg_data, filesize + 5, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 			if (err < 0) {
 				printf("Something went wrong with sending the package!\n");
+				close(udp_socket);
+				exit(0);
 			}
 			free(msg_data);
 		}
@@ -200,25 +202,19 @@ int main(int argc, char **argv)
 
 		// create sha-512 value
 		unsigned char sha512[64];
-		//printf("sha_string: ");
-		//int y;
-		//for (y = 0; y < filesize; y++) {
-			//printf("%c", sha_string[y]);
-		//}
-		//printf("\n");
-		//printf("debug ausgabe 1\n");
 		create_sha512(zip_filename, sha512);
 		int i;
 		for (i = 0; i < 64; i++) {
 			msg_sha[i+1] = sha512[i];
 		}
-		//fclose(f);
 
 		// Sending the SHA Value
 		err = sendto(udp_socket, msg_sha, sizeof(msg_sha) + 1, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 		// catching the error
 		if (err < 0) {
 			printf("Error by sender sha512\n"); //(1)
+			close(udp_socket);
+			exit(0);
 		}
 
 /*
@@ -235,6 +231,8 @@ int main(int argc, char **argv)
 		} else {
 			// TODO: FEHLERBEHANDLUNG
 			printf("Wrong packet as answer!\n");
+			close(udp_socket);
+			exit(0);
 		}
 
 	}
@@ -248,16 +246,13 @@ int main(int argc, char **argv)
 	char rm[3 + strlen(zip_filename)];
 	strcpy(rm, "rm ");
 	strcat(rm, zip_filename);
-	//system(rm);
+	system(rm);
 
 	// closing the socket
 	err = close(udp_socket);
 	if (err < 0) {
 		printf("Error by sender socket close\n");
 	}
-
-	printf("sender_udp finished!\n");
-
 }
 
 //TODO: Error Handling wenn files nicht geöffnet werden können

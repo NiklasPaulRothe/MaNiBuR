@@ -38,6 +38,7 @@ int main(int argc, char **argv)
 	udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
 	if (udp_socket < 0) { 
 		printf("Error by receiver socket creation\n"); //(1)
+		exit(0);
 	}
 
 
@@ -59,6 +60,8 @@ int main(int argc, char **argv)
 	// Error handler if it fails
 	if (err < 0) {
 		printf("Error by receiver sendto\n"); //(1)
+		close(udp_socket);
+		exit(0);
 	}
 
 
@@ -79,6 +82,8 @@ int main(int argc, char **argv)
 
 	if (len < 0) {
 		printf("Error by receiver receiving"); //(1)
+		close(udp_socket);
+		exit(0);
 	}
 
 
@@ -97,15 +102,13 @@ int main(int argc, char **argv)
 	name_len = extract_header_name_len(msg_tmp);
 	char *name = malloc((name_len + 1) * sizeof(char));
 	unsigned int file_size = extract_header_name_file_size(msg_tmp, name, name_len);
-
-	printf("Received %d bytes from host %s port %d: %s\n", len, inet_ntoa(from.sin_addr), ntohs(from.sin_port), name);
-	printf("Header: %hhu, Name-length: %hu, File_size: %u \n", head, name_len, file_size);
+	printf("Filename: %s\n", name);
+	printf("Filesize: %hu\n", file_size);
 
 
 /*
 	receiving file (4)
 */
-	printf("receiving data start\n");
 	struct timeval timer;
 	timer.tv_sec = 10;
 	timer.tv_usec = 0;
@@ -133,7 +136,6 @@ int main(int argc, char **argv)
 		/*
 			receiving a packet
 		*/
-		printf("package %u is needed now\n", needed_number);
 		
 		// holds the length of the actual packet
 		int packet_len;
@@ -155,9 +157,9 @@ int main(int argc, char **argv)
 		// if the packet_len is negative, smth went wrong by receiving the packet
 		if (packet_len < 0) {
 			printf("Error by receiver receiving\n"); //(1)
+			close(udp_socket);
+			exit(0);
 		}
-
-		printf("packet_len: %d\n", packet_len);
 
 
 		// checks if packet is a DATA_T packet or not
@@ -198,8 +200,7 @@ int main(int argc, char **argv)
 		/*
 			putting data into file
 		*/
-		int i;
-		printf("start writing\n");		
+		int i;	
 		for (i = 5; i < packet_len; i++) {
 			fputc(msg_data[i], f);
 			file_position++;			
@@ -207,7 +208,6 @@ int main(int argc, char **argv)
 				break;
 			}
 		}
-		printf("end writing\n");
 		
 
 		free(msg_data);
@@ -218,7 +218,6 @@ int main(int argc, char **argv)
 	handle sha512 value
 */
 	unsigned char sha_value[64];
-	printf("path: %s\n", filepath);
 
 	char sha_answer[2];
 	sha_answer[0] = SHA512_CMP_T;
@@ -234,9 +233,6 @@ int main(int argc, char **argv)
 	if (err < 0) {
 		printf("Error by receiver socket close\n");
 	}
-
-
-	printf("receiver_udp finished!\n");
 
 }
 
