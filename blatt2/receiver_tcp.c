@@ -63,8 +63,8 @@ int main(int argc, char **argv)
 	Waiting for message (2)
 */
 	unsigned int len;
-	char msg[64];
-	len = read(tcp_socket, msg, 64);
+	char msg[1492];
+	len = read(tcp_socket, msg, 1492);
 
 	/*
 		extracting name_len, name and size (2)
@@ -82,6 +82,10 @@ int main(int argc, char **argv)
 	receiving file (4)
 */
 	printf("receiving data start\n");
+	struct timeval timer;
+	timer.tv_sec = 10;
+	timer.tv_usec = 0;
+	err = setsockopt(tcp_socket, SOL_SOCKET, SO_RCVTIMEO, &timer, sizeof(timer));
 
 	// a position in the new file which is needed if multiple packets were send
 	int file_position = 0;
@@ -99,53 +103,48 @@ int main(int argc, char **argv)
 	f = fopen(filepath, "w");
 
 	int end_of_file = 0;
-	while(end_of_file == 0) {
-		
-		// holds the length of the actual packet
-		int packet_len;
-		// holds the data of the actual packet
-		char *msg_data;
-
-		// allocating memory for the expected data and receiving it
-		if (file_size_temp > 1492) {
-			// if packet is at max size (probably more coming)
-			msg_data = malloc(1492 * sizeof(char)); 
-			file_size_temp = file_size_temp - 1492;
-			packet_len = read(tcp_socket, msg_data, (1492 * sizeof(char)));
-		} else {
-			// if packet isnt at max size
-			msg_data = malloc((file_size_temp) * sizeof(char));
-			packet_len = read(tcp_socket, msg_data, ((file_size_temp) * sizeof(char)));
-		}
-
-		// if the packet_len is negative, smth went wrong by receiving the packet
+	int count_packages = 0;
+	int bytesread = 0;
+	char *msg_data;
+	int packet_len;
+	msg_data = malloc(file_size * sizeof(char));
+	while (bytesread < file_size) {
+		packet_len = read(tcp_socket, msg_data + bytesread, file_size - bytesread);
 		if (packet_len < 0) {
 			printf("Error by receiver receiving\n"); //(1)
 		}
-
-		printf("packet_len: %d\n", packet_len);
-
-	/*
-		putting data into file
-	*/
-		int i;
-		printf("start writing\n");		
-		for (i = 0; i < packet_len; i++) {
-			printf("Byte #: %d - %c \n", i, msg_data[i]);
-			fputc(msg_data[i], f);
-			file_position++;			
-			if (file_position >= file_size) {
-				printf("EOF \n");
-				end_of_file = 1;
-				break;
-			}
-		}
-		printf("end writing\n");
-		
-		free(msg_data);
+		bytesread += packet_len;
 
 	}
+	int i;
+	printf("start writing\n");		
+	for (i = 0; i < file_size; i++) {
+		printf("Byte #: %d - %c \n", i, msg_data[i]);
+		fputc(msg_data[i], f);		
+	}
+	printf("end writing\n");
+	free(msg_data);
 	fclose(f);
+
+/*
+	receiving sha512 value
+*/
+
+	unsigned char *sha512;
+	sha512 = malloc(sizeof(char) * 64);
+	err = read(tcp_socket, sha512, 64);
+	if (err < 0){
+		printf("Error by receiver receiving sha512 value\n");
+	}
+
+	char* cmp;
+	cmp = malloc(sizeof(char));
+	cmp[0] = handle_sha512(filepath, sha512);
+	err= write(tcp_socket, cmp , 1);
+	if (err < 0) {
+		printf("error sending compare value\n");
+	}
+	free(cmp);
 
 
 /* 

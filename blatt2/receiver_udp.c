@@ -106,6 +106,10 @@ int main(int argc, char **argv)
 	receiving file (4)
 */
 	printf("receiving data start\n");
+	struct timeval timer;
+	timer.tv_sec = 10;
+	timer.tv_usec = 0;
+	err = setsockopt(udp_socket, SOL_SOCKET, SO_RCVTIMEO, &timer, sizeof(timer));
 
 	// the packet number which is expectet next
 	unsigned int needed_number = 0;
@@ -214,18 +218,11 @@ int main(int argc, char **argv)
 	handle sha512 value
 */
 	unsigned char sha_value[64];
-	create_sha512(filepath, sha_value);
+	printf("path: %s\n", filepath);
 
 	char sha_answer[2];
 	sha_answer[0] = SHA512_CMP_T;
-
-	if (strcmp(sha_value, sha_input) == 0) {		
-		sha_answer[1] = SHA512_CMP_OK;
-		printf("gleich\n");
-	} else {
-		sha_answer[1] = SHA512_CMP_ERROR;
-		printf("nicht gleich\n");
-	}
+	sha_answer[1] = handle_sha512(filepath, sha_value);
 
 	err = sendto(udp_socket, sha_answer, 2, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 

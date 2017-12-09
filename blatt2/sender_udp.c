@@ -47,6 +47,10 @@ int main(int argc, char **argv)
 	if (udp_socket < 0) { 
 		printf("Error by sender socket creation\n");	
 	}
+	struct timeval timer;
+	timer.tv_sec = 10;
+	timer.tv_usec = 0;
+	err = setsockopt(udp_socket, SOL_SOCKET, SO_RCVTIMEO, &timer, sizeof(timer));
 
 
 
@@ -139,6 +143,8 @@ int main(int argc, char **argv)
 		
 		// loop to create every package calculated above
 		unsigned int count;
+		char *sha_string;
+		sha_string = malloc(filesize * sizeof(char));
 		for (count = 0; count < packages; count++) {
 			printf("package %u of %i building and sending\n", count, (packages-1));
 
@@ -164,6 +170,10 @@ int main(int argc, char **argv)
 	
 				if((temp = fgetc(f)) != EOF){
 					msg_data[i + 5] = temp;
+					//printf("test\n");
+					sha_string[i + (1487 * count)] = temp;
+					//printf("sha: %c\n", sha_string[i + (1487 * count)]);
+					//printf("sha string: %c\n", sha_string[i + (1487 * count)]);
 					//printf("byte %i in package %u is %c\n", i, count, msg_data[i + 5]);					
 				} else {
 					printf("EOF reached!\n");
@@ -189,12 +199,20 @@ int main(int argc, char **argv)
 		msg_sha[0] = SHA512_T;
 
 		// create sha-512 value
-		char sha512[64];
+		unsigned char sha512[64];
+		//printf("sha_string: ");
+		//int y;
+		//for (y = 0; y < filesize; y++) {
+			//printf("%c", sha_string[y]);
+		//}
+		//printf("\n");
+		//printf("debug ausgabe 1\n");
 		create_sha512(zip_filename, sha512);
 		int i;
 		for (i = 0; i < 64; i++) {
 			msg_sha[i+1] = sha512[i];
 		}
+		//fclose(f);
 
 		// Sending the SHA Value
 		err = sendto(udp_socket, msg_sha, sizeof(msg_sha) + 1, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));

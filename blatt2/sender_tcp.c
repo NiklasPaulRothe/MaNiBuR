@@ -86,6 +86,10 @@ int main(int argc, char **argv)
 	} else {
 		printf("Received connection from %s!\n", inet_ntoa(from.sin_addr));
 	} 
+	struct timeval timer;
+	timer.tv_sec = 10;
+	timer.tv_usec = 0;
+	err = setsockopt(tcp_socket2, SOL_SOCKET, SO_RCVTIMEO, &timer, sizeof(timer));
 
 /*
 	sending first message (2)
@@ -96,7 +100,7 @@ int main(int argc, char **argv)
 	create_header_msg(msg, directory, zip_filename);
 
 	int len;
-	len = write(tcp_socket2, msg, 1492 * sizeof(char)); // TODO: weniger bytes senden!
+	len = write(tcp_socket2, msg, 1492 * sizeof(char));
 	printf("Send bytes: %d\n", len);
 
 	free(msg);
@@ -123,23 +127,23 @@ int main(int argc, char **argv)
 	// loop to create every package calculated above
 	unsigned int count;
 	for (count = 0; count < packages; count++) {
-		printf("package %u of %i building and sending\n", count, (packages-1));
+		//printf("package %u of %i building and sending\n", count, (packages-1));
 			// allocating memory for the message
 		char *msg_data;
 		msg_data = malloc(1492 * sizeof(char));
 		// insert the data
-		int i, temp;
-		for (i = 0; i < 1492; i++) {
+		int byte_count, temp;
+		for (byte_count = 0; byte_count < 1492; byte_count++) {
 			if((temp = fgetc(f)) != EOF){
-				msg_data[i] = temp;
-				printf("byte %i in package %u is %c\n", i, count, msg_data[i]);					
+				msg_data[byte_count] = temp;
+				printf("byte %i in package %u is %c\n", byte_count, count, msg_data[byte_count]);					
 			} else {
 				printf("EOF reached!\n");
 				break;
 			}
 		}
 		// sending the message
-		err = write(tcp_socket2, msg_data, 1492 * sizeof(char));
+		err = write(tcp_socket2, msg_data, byte_count * sizeof(char));
 		if (err < 0) {
 			printf("Something went wrong with sending the package!\n");
 		}
@@ -149,6 +153,26 @@ int main(int argc, char **argv)
 	fclose(f);
 
 
+/*
+	create and send SHA512 value
+*/
+	unsigned char sha512[64];
+	create_sha512(zip_filename, sha512);
+
+	err = write(tcp_socket2, sha512, 64 * sizeof(char));
+	if (err < 0) {
+			printf("Error by sender sha512\n");
+	}
+
+	char* cmp;
+	cmp = malloc(sizeof(char));
+	err = read(tcp_socket2, cmp, sizeof(char));
+	if (cmp[0] == SHA512_CMP_OK) {
+		printf("Übertragung erfolgreich!\n");
+	} else {
+		printf("Übertragung fehlgeschlagen!\n");
+	}
+	free(cmp);
 /*
 	closing file socket
 */

@@ -29,7 +29,6 @@ int file_size(const char *filename) {
 */
 int create_sha512(char* filename, unsigned char* storage)
 {
-
 	int filesize = file_size(filename);
 
 	FILE *f;
@@ -53,6 +52,20 @@ int create_sha512(char* filename, unsigned char* storage)
 	printf("\n");
 
 	fclose(f);
+}
+
+char handle_sha512(char* filepath, unsigned char* received_sha) {
+	char* sha_value;
+	printf("path: %s\n", filepath);
+	create_sha512(filepath, sha_value);
+
+	if (strcmp(sha_value, received_sha) == 0) {
+		printf("gleich\n");		
+		return SHA512_CMP_OK;
+	} else {
+		printf("nicht gleich\n");
+		return SHA512_CMP_ERROR;
+	}
 }
 
 void create_header_msg(char *msg, char *directory, char *zip_filename)
