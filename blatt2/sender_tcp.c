@@ -173,6 +173,12 @@ int main(int argc, char **argv)
 		printf("Übertragung fehlgeschlagen!\n");
 	}
 	free(cmp);
+	char* temp;
+	temp = malloc(sizeof(char));
+	while ((err = read(tcp_socket2, temp, sizeof(char))) > 0) {
+		sleep(3);
+	}
+	free(temp);
 /*
 	closing file socket
 */
@@ -189,7 +195,7 @@ int main(int argc, char **argv)
 	char rm[3 + strlen(zip_filename)];
 	strcpy(rm, "rm ");
 	strcat(rm, zip_filename);
-	//system(rm);
+	system(rm);
 
 	// closing the socket
 	err = close(tcp_socket);
