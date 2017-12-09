@@ -13,7 +13,7 @@ int main(int argc, char **argv)
 	// folder in which the data will be stored
 	char *name_prefix = "received/";
 	// used to store the sha value
-	char sha_input[64];
+	unsigned char sha_input[64];
 
 
 /*
@@ -91,6 +91,11 @@ int main(int argc, char **argv)
  		extracting header
  	*/
 	unsigned char head = msg[0];
+	if (head != HEADER_T) {
+		printf("First package is not from type HEADER_T\n");
+		close(udp_socket);
+		exit(0);
+	}
 
 
 	/*
@@ -217,11 +222,10 @@ int main(int argc, char **argv)
 /*
 	handle sha512 value
 */
-	unsigned char sha_value[64];
 
 	char sha_answer[2];
 	sha_answer[0] = SHA512_CMP_T;
-	sha_answer[1] = handle_sha512(filepath, sha_value);
+	sha_answer[1] = handle_sha512(filepath, sha_input);
 
 	err = sendto(udp_socket, sha_answer, 2, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 

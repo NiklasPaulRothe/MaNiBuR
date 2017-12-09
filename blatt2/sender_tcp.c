@@ -106,6 +106,12 @@ int main(int argc, char **argv)
 
 	int len;
 	len = write(tcp_socket2, msg, 1492 * sizeof(char));
+	if(len < 0){
+		printf("Error sending header\n");
+		close(tcp_socket2);
+		close(tcp_socket);
+		exit(0);
+	}
 
 	free(msg);
 

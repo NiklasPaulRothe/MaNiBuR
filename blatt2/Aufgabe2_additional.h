@@ -27,7 +27,7 @@ int file_size(const char *filename) {
 /*
 	creates the sha512 string
 */
-int create_sha512(char* filename, unsigned char* storage)
+void create_sha512(char* filename, unsigned char* storage)
 {
 	int filesize = file_size(filename);
 
@@ -42,7 +42,7 @@ int create_sha512(char* filename, unsigned char* storage)
 		i++;
 	}
 
-	char sha512_value[SHA512_DIGEST_LENGTH];
+	unsigned char sha512_value[SHA512_DIGEST_LENGTH];
 	SHA512(content, filesize, sha512_value);
 
 	char *string = create_sha512_string(sha512_value);
@@ -55,10 +55,10 @@ int create_sha512(char* filename, unsigned char* storage)
 }
 
 char handle_sha512(char* filepath, unsigned char* received_sha) {
-	char* sha_value;
+	unsigned char sha_value[64];
 	create_sha512(filepath, sha_value);
 
-	if (strcmp(sha_value, received_sha) == 0) {
+	if (memcmp(sha_value, received_sha, 64) == 0) {
 		printf("Übertragung erfolgreich\n");		
 		return SHA512_CMP_OK;
 	} else {

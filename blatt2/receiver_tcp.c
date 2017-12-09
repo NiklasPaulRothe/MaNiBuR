@@ -12,8 +12,6 @@ int main(int argc, char **argv)
 	int err;
 	// folder in which the data will be stored
 	char *name_prefix = "received/";
-	// used to store the sha value
-	char sha_input[64];
 
 
 /*
@@ -34,7 +32,6 @@ int main(int argc, char **argv)
 /* 
 	creating a socket in tcp_socket
 */
-	struct sockaddr_in addr;
 
 	tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (tcp_socket < 0) { 
@@ -65,6 +62,11 @@ int main(int argc, char **argv)
 	unsigned int len;
 	char msg[1492];
 	len = read(tcp_socket, msg, 1492);
+	if (len < 0) {
+		printf("Error receiving message\n");
+		close(tcp_socket);
+		exit(0);
+	}
 
 	/*
 		extracting name_len, name and size (2)
@@ -84,11 +86,6 @@ int main(int argc, char **argv)
 	timer.tv_usec = 0;
 	err = setsockopt(tcp_socket, SOL_SOCKET, SO_RCVTIMEO, &timer, sizeof(timer));
 
-	// a position in the new file which is needed if multiple packets were send
-	int file_position = 0;
-	// a temporary file_size to save the original
-	int file_size_temp = file_size;
-
 	// the filepath to the created file
 	char filepath[name_len + strlen(name_prefix)];
 	printf("File: %s\n", name);
@@ -101,8 +98,6 @@ int main(int argc, char **argv)
 	f = fopen(filepath, "w");
 	printf("Filesize: %hu\n", file_size);
 
-	int end_of_file = 0;
-	int count_packages = 0;
 	int bytesread = 0;
 	char *msg_data;
 	int packet_len;
