@@ -27,22 +27,26 @@ int file_size(const char *filename) {
 /*
 	creates the sha512 string
 */
-void create_sha512(char* filename, unsigned char* storage)
+void create_sha512(char* filename, unsigned char* sha512_value)
 {
 	int filesize = file_size(filename);
 
 	FILE *f;
 	f = fopen(filename, "r");
-	unsigned char content[filesize];
+	unsigned char *content;
+	content = malloc(sizeof(unsigned char) * filesize);
+	memset(content, '\0', filesize * sizeof(unsigned char));
 
 	int i = 0;
 	char temp;
-	while ((temp = fgetc(f)) != EOF) {
-		content[i] = temp;
-		i++;
+
+	for (i = 0; i < filesize; i++) {
+		if ((temp = fgetc(f)) != EOF) {
+			content[i] = temp;
+		} else break;
 	}
 
-	unsigned char sha512_value[SHA512_DIGEST_LENGTH];
+
 	SHA512(content, filesize, sha512_value);
 
 	char *string = create_sha512_string(sha512_value);
@@ -51,23 +55,30 @@ void create_sha512(char* filename, unsigned char* storage)
 	printf(string);
 	printf("\n");
 
+
+	free(content);
+	free(string);
 	fclose(f);
 }
 
 char handle_sha512(char* filepath, unsigned char* received_sha) {
-	unsigned char sha_value[64];
+	unsigned char *sha_value;
+	sha_value = malloc(64 * sizeof(unsigned char));
 	create_sha512(filepath, sha_value);
 
 	if (memcmp(sha_value, received_sha, 64) == 0) {
-		printf("Übertragung erfolgreich\n");		
+		printf("Übertragung erfolgreich\n");	
+		free(sha_value);	
 		return SHA512_CMP_OK;
 	} else {
 		printf("Übertragung fehlgeschlagen\n");
+		free(sha_value);
 		return SHA512_CMP_ERROR;
 	}
+
 }
 
-void create_header_msg(char *msg, char *directory, char *zip_filename)
+int create_header_msg(char *msg, char *directory, char *zip_filename)
 {
 	/*
 		sending length of the file name
@@ -97,7 +108,9 @@ void create_header_msg(char *msg, char *directory, char *zip_filename)
 	msg[2+strlen(directory)+1] = size;
 	size >>= 8;
 	msg[2+strlen(directory)] = size;
-	size >>= 8;	
+	size >>= 8;
+
+	return (2+strlen(directory)+3);
 }
 
 /*

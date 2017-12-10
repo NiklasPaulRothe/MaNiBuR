@@ -102,10 +102,11 @@ int main(int argc, char **argv)
 
 	char *msg;
 	msg = malloc(1492 * sizeof(char));
-	create_header_msg(msg, directory, zip_filename);
-
+	int msg_len;
+	msg_len = create_header_msg(msg, directory, zip_filename);
+	
 	int len;
-	len = write(tcp_socket2, msg, 1492 * sizeof(char));
+	len = write(tcp_socket2, msg, msg_len * sizeof(char) +1);
 	if(len < 0){
 		printf("Error sending header\n");
 		close(tcp_socket2);

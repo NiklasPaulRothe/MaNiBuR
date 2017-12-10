@@ -49,10 +49,7 @@ int main(int argc, char **argv)
 		printf("Error by sender socket creation\n");
 		exit(0);	
 	}
-	struct timeval timer;
-	timer.tv_sec = 10;
-	timer.tv_usec = 0;
-	err = setsockopt(udp_socket, SOL_SOCKET, SO_RCVTIMEO, &timer, sizeof(timer));
+
 
 
 
@@ -87,10 +84,19 @@ int main(int argc, char **argv)
 	len = recvfrom(udp_socket, request_msg, sizeof(request_msg), 0, (struct sockaddr*) &from, &flen);
 
 	if (len < 0) {
-		printf("Error by sender receiving");
+		printf("Error by sender receiving request\n");
 		close(udp_socket);
 		exit(0);
 	}
+
+/*
+	Setting the timeout timer to 10 seconds
+*/
+		struct timeval timer;
+		timer.tv_sec = 10;
+		timer.tv_usec = 0;
+		err = setsockopt(udp_socket, SOL_SOCKET, SO_RCVTIMEO, &timer, sizeof(timer));
+
 
 /*
 	sending archive (3)
@@ -126,6 +132,8 @@ int main(int argc, char **argv)
 			exit(0);
 		}	
 		free(msg);
+
+
 
 	/*
 		sending file
@@ -187,6 +195,7 @@ int main(int argc, char **argv)
 				close(udp_socket);
 				exit(0);
 			}
+			free(sha_string);
 			free(msg_data);
 		}
 
@@ -201,15 +210,14 @@ int main(int argc, char **argv)
 		msg_sha[0] = SHA512_T;
 
 		// create sha-512 value
-		unsigned char sha512[64];
+		unsigned char sha512[64];		
 		create_sha512(zip_filename, sha512);
 		int i;
 		for (i = 0; i < 64; i++) {
 			msg_sha[i+1] = sha512[i];
 		}
-
 		// Sending the SHA Value
-		err = sendto(udp_socket, msg_sha, sizeof(msg_sha) + 1, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
+		err = sendto(udp_socket, msg_sha, 65 * sizeof(unsigned char), 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 		// catching the error
 		if (err < 0) {
 			printf("Error by sender sha512\n"); //(1)

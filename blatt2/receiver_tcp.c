@@ -60,7 +60,8 @@ int main(int argc, char **argv)
 	Waiting for message (2)
 */
 	unsigned int len;
-	char msg[1492];
+	char *msg;
+	msg = malloc(1492 * sizeof(char));
 	len = read(tcp_socket, msg, 1492);
 	if (len < 0) {
 		printf("Error receiving message\n");
@@ -77,6 +78,7 @@ int main(int argc, char **argv)
 	char *name = malloc((name_len + 1) * sizeof(char));
 	unsigned int file_size = extract_header_name_file_size(msg, name, name_len);
 
+	free(msg);
 
 /*
 	receiving file (4)
@@ -106,6 +108,8 @@ int main(int argc, char **argv)
 		packet_len = read(tcp_socket, msg_data + bytesread, file_size - bytesread);
 		if (packet_len < 0) {
 			printf("Error by receiver receiving\n"); //(1)
+			free(msg_data);
+			fclose(f);
 			close(tcp_socket);
 			exit(0);
 		}
@@ -125,8 +129,8 @@ int main(int argc, char **argv)
 */
 
 	unsigned char *sha512;
-	sha512 = malloc(sizeof(char) * 64);
-	err = read(tcp_socket, sha512, 64);
+	sha512 = malloc(64* sizeof(unsigned char));
+	err = read(tcp_socket, sha512, 64 * sizeof(unsigned char));
 	if (err < 0){
 		printf("Error by receiver receiving sha512 value\n");
 		close(tcp_socket);
@@ -139,12 +143,13 @@ int main(int argc, char **argv)
 	char* cmp;
 	cmp = malloc(sizeof(char));
 	cmp[0] = handle_sha512(filepath, sha512);
-	err= write(tcp_socket, cmp , 1);
+	err = write(tcp_socket, cmp , 1);
 	if (err < 0) {
 		printf("error sending compare value\n");
 		close(tcp_socket);
 		exit(0);
 	}
+	free(sha512);
 	free(cmp);
 
 

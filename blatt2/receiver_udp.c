@@ -13,7 +13,8 @@ int main(int argc, char **argv)
 	// folder in which the data will be stored
 	char *name_prefix = "received/";
 	// used to store the sha value
-	unsigned char sha_input[64];
+	unsigned char *sha_input;
+	sha_input = malloc(sizeof(unsigned char) * 64);
 
 
 /*
@@ -64,6 +65,13 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
+/*
+	Setting timeout timer to 10 seconds
+*/
+	struct timeval timer;
+	timer.tv_sec = 10;
+	timer.tv_usec = 0;
+	err = setsockopt(udp_socket, SOL_SOCKET, SO_RCVTIMEO, &timer, sizeof(timer));
 
 
 
@@ -114,10 +122,7 @@ int main(int argc, char **argv)
 /*
 	receiving file (4)
 */
-	struct timeval timer;
-	timer.tv_sec = 10;
-	timer.tv_usec = 0;
-	err = setsockopt(udp_socket, SOL_SOCKET, SO_RCVTIMEO, &timer, sizeof(timer));
+
 
 	// the packet number which is expectet next
 	unsigned int needed_number = 0;
@@ -172,9 +177,10 @@ int main(int argc, char **argv)
 		if (msg_data[0] == SHA512_T) {
 			// packet is the sha value packet and the value will be stored
 			int i;
-			for	(i = 1; i < 64; i++) {				
+			for	(i = 1; i < 65; i++) {				
 				sha_input[i-1] = msg_data[i];
-			}	
+			}
+			free(msg_data);					
 			break;
 		} else if (msg_data[0] != DATA_T) {
 			free(msg_data);		
@@ -229,7 +235,7 @@ int main(int argc, char **argv)
 
 	err = sendto(udp_socket, sha_answer, 2, 0, (struct sockaddr*) &destination, sizeof(struct sockaddr_in));
 
-
+	free(sha_input);
 /* 
 	closing the socket
 */
