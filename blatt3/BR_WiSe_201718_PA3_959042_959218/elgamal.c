@@ -17,9 +17,8 @@ int main (int argc, char **argv) {
 	unsigned short openkey_sender = 16; // B
 	unsigned short order = 59; // p
 	unsigned short generator = 2; // g
-	//unsigned short secret = 9; // a
 	unsigned short secret = 5; // a
-	unsigned short openkey = mod_exp(generator, secret, order); // A
+	unsigned short openkey = 32; // A
  
 
 
@@ -27,6 +26,9 @@ int main (int argc, char **argv) {
 	// Öffnen des Moduls
 	int fd = open("/dev/brpa3_959042_959218", O_RDWR);
 
+	// secret(und openkey) auf abeichenden Wert ändern
+	secret = 9;
+	openkey = mod_exp(generator, secret, order);
 	// Erstellen des Objekts für den ioctl()-Befehl SET_SECRET
 	brpa3_args io_secret;
 	io_secret.value = secret;

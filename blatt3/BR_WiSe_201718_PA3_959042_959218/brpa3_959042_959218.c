@@ -277,12 +277,14 @@ long brpa3_959042_959218_ioctl(struct file *f, unsigned int cmd, unsigned long a
                 return -EACCES;
             }
             update_keys(variable.value);
+            break;
         case BRPA3_SET_OPENKEY:
         	if (copy_from_user(&variable, (brpa3_args *)arg, sizeof(brpa3_args)))
             {
                 return -EACCES;
             }
             openkey_sender = variable.value;
+            break;
         case BRPA3_GET_OPENKEY:
 			variable.value = openkey;
 			if (copy_to_user((brpa3_args *)arg, &variable, sizeof(brpa3_args)))
