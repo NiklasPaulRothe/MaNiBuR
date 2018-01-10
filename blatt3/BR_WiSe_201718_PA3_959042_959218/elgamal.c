@@ -50,9 +50,8 @@ int main (int argc, char **argv) {
 
 	// For-Schleife um Zahlen von 1 bis 58 zu verarbeiten
 	printf("m - c - ret\n");
-	//int m;	
-	//for(m = 1; m <= 58; m++) {
-	int m = 13;
+	int m;	
+	for(m = 1; m <= 58; m++) {
 		printf("%i - ", m);
 
 		// Verschlüsseln der Zahl
@@ -80,5 +79,5 @@ int main (int argc, char **argv) {
 		// Ausgabe der entschlüsselten Zahl
 		printf(c_string);
 		printf("\n");
-	//}
+	}
 }
