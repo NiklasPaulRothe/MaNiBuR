@@ -14,37 +14,22 @@
 
 int normal(int argc, char **argv) {
 	int fd = open("/dev/brpa3_959042_959218", O_RDWR);	
-	//printf("inserted: %s\n", argv[1]);
-	//write(fd, argv[1], strlen(argv[1]));
-	//read(fd, argv[1], strlen(argv[1]));
-	//printf("output: %s\n", argv[1]);
+
 	
 
 	brpa3_args v;
-	//v.value = 8;
-	//if (ioctl(fd, BRPA3_SET_OPENKEY, &v) == -1){
-	//	perror("Error Set_Openkey 1");
-	//}
-
-	//argv[1] = temp;
-
-
-	brpa3_args v_key;
-	if (ioctl(fd, BRPA3_GET_OPENKEY, &v_key) == -1){
-		perror("Error Get_Openkey");
-	}
-	printf("openkey: %hu\n", v_key.value);
-
-	//v.value = 16;
-	//if (ioctl(fd, BRPA3_SET_OPENKEY, &v) == -1){
-	//	perror("Error Set_Openkey 2");
-	//}
-
 	v.value = 5;
 	if (ioctl(fd, BRPA3_SET_SECRET, &v) == -1){
 		perror("ERROR SET_SECRET");
 	}
 
+	brpa3_args v_key;
+	if (ioctl(fd, BRPA3_GET_OPENKEY, &v_key) == -1){
+		perror("Error Get_Openkey");
+	}
+
+
+	printf("openkey: %hu\n", v_key.value);
 	printf("inserted: %s\n", argv[1]);
 	write(fd, argv[1], strlen(argv[1]));
 	read(fd, argv[1], strlen(argv[1]));

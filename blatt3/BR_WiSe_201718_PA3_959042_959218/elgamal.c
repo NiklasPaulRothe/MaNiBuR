@@ -70,11 +70,11 @@ int main (int argc, char **argv) {
 		const int n = snprintf(NULL, 0, "%lu", c);
 		char c_string[n+1];
 		snprintf(c_string, n+1, "%lu", c);
-		c_string[n] = '\n';
+		c_string[n] = '\0';
 
 		// Übergeben des Strings an das Modul und lesen der entschlüsselten Zahl
 		write(fd, c_string, strlen(c_string));
-		read(fd, c_string, strlen(c_string));
+		read(fd, c_string, strlen(c_string) + 1);
 
 		// Ausgabe der entschlüsselten Zahl
 		printf(c_string);

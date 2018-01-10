@@ -82,11 +82,10 @@ static void buffer_free(struct buffer *buffer)
 }
 
 //Decrypts the given Number
-static int decrypt(char *start, char *end) 
+static int decrypt(struct buffer *buf) 
 {
-
 	int c = 0;
-	int err = kstrtoint(start, 10, &c);
+	int err = kstrtoint(buf->data, 10, &c);
 
 	printk("Secret: %hu", secret);
 	printk("Openkey: %hu", openkey);
@@ -103,7 +102,8 @@ static int decrypt(char *start, char *end)
 		// Formel (1) 
 		c = c % order;
 		printk("After Decrypted: %i", c);
-		sprintf(start, "%i", c);
+
+		sprintf(buf->data, "%i", c);
 
 	} else {
 		return -EINVAL;
@@ -127,7 +127,6 @@ static ssize_t brpa3_959042_959218_read(struct file *file, char __user * out,
 	}
 
 	while (buf->read_ptr == buf->end) {
-		printk("while in read");
 		mutex_unlock(&buf->lock);
 		if (file->f_flags & O_NONBLOCK) {
 			result = -EAGAIN;
@@ -155,6 +154,9 @@ static ssize_t brpa3_959042_959218_read(struct file *file, char __user * out,
 		result = -EFAULT;
 		goto out_unlock;
 	}
+
+	// Um Fragmente dieser Berechnung zu verhindern wird hier der Buffer gecleared
+	memset(buf->read_ptr, 0, size);
 
 	buf->read_ptr += size;
 	result = size;
@@ -204,7 +206,7 @@ static ssize_t brpa3_959042_959218_write(struct file *file, const char __user * 
 
 	if (buf->end > buf->data) {
 		//printk("decrypt number");
-		decrypt(buf->data, buf->end - 1);
+		decrypt(buf);
 	}
 
 	wake_up_interruptible(&buf->read_queue);
