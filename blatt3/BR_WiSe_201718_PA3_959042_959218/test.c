@@ -16,7 +16,6 @@ int normal(int argc, char **argv) {
 	int fd = open("/dev/brpa3_959042_959218", O_RDWR);	
 
 	
-
 	brpa3_args v;
 	v.value = 5;
 	if (ioctl(fd, BRPA3_SET_SECRET, &v) == -1){
@@ -27,15 +26,15 @@ int normal(int argc, char **argv) {
 	if (ioctl(fd, BRPA3_GET_OPENKEY, &v_key) == -1){
 		perror("Error Get_Openkey");
 	}
-
-
 	printf("openkey: %hu\n", v_key.value);
+
+
 	printf("inserted: %s\n", argv[1]);
 	write(fd, argv[1], strlen(argv[1]));
 	read(fd, argv[1], strlen(argv[1]));
 	printf("output: %s\n", argv[1]);
 
-
+	close(fd);
 
 
 }
@@ -45,6 +44,7 @@ int multi(int argc, char **argv) {
 	if (fork()) {
     	/* Parent is the writer */
 	    while (1)
+	    	printf("inserted: %s\n", argv[1]);
 	        write(fd, argv[1], strlen(argv[1]));
 	} else {
     	/* child is the reader */
@@ -56,6 +56,6 @@ int multi(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-	normal(argc, argv);
-	//multi(argc, argv);
+	//normal(argc, argv);
+	multi(argc, argv);
 }

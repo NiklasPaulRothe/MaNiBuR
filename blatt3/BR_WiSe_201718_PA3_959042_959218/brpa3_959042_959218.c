@@ -116,7 +116,9 @@ static int decrypt(struct buffer *buf)
 static ssize_t brpa3_959042_959218_read(struct file *file, char __user * out,
 			    size_t size, loff_t * off)
 {
+	printk("Hello from read function");
 	struct buffer *buf = file->private_data;
+	printk("Inhalt File in Read: %s", buf->data);
 	ssize_t result;	
 	//size_t size_store = size;
 	//int count = 0;
@@ -125,7 +127,6 @@ static ssize_t brpa3_959042_959218_read(struct file *file, char __user * out,
 		result = -ERESTARTSYS;
 		goto out;
 	}
-
 	while (buf->read_ptr == buf->end) {
 		mutex_unlock(&buf->lock);
 		if (file->f_flags & O_NONBLOCK) {
@@ -162,16 +163,15 @@ static ssize_t brpa3_959042_959218_read(struct file *file, char __user * out,
 	result = size;
 
  out_unlock:
-	printk("out_unlock read");
 	mutex_unlock(&buf->lock);
  out:
- 	printk("out read");
 	return result; 
 }
 
 static ssize_t brpa3_959042_959218_write(struct file *file, const char __user * in,
 			     size_t size, loff_t * off)
 {
+	printk("Hello from write function");
 	struct buffer *buf = file->private_data;
 	ssize_t result;
 	//int size_store = size;
@@ -205,7 +205,6 @@ static ssize_t brpa3_959042_959218_write(struct file *file, const char __user * 
 	buf->read_ptr = buf->data;
 
 	if (buf->end > buf->data) {
-		//printk("decrypt number");
 		decrypt(buf);
 	}
 
@@ -214,15 +213,14 @@ static ssize_t brpa3_959042_959218_write(struct file *file, const char __user * 
 	result = size;
 
  out_unlock:
- 	//printk("out_unlock");
 	mutex_unlock(&buf->lock);
  out:
- 	//printk("out");
 	return result;
 }
 
 static int brpa3_959042_959218_open(struct inode *inode, struct file *file)
 {
+	printk("Hello from open function");
 	struct buffer *buf;
 	int err = 0;
 
@@ -230,7 +228,6 @@ static int brpa3_959042_959218_open(struct inode *inode, struct file *file)
 	 * Real code can use inode to get pointer to the private
 	 * device state.
 	 */
-
 	buf = buffer_alloc(buffer_size);
 	if (unlikely(!buf)) {
 		err = -ENOMEM;
@@ -239,17 +236,17 @@ static int brpa3_959042_959218_open(struct inode *inode, struct file *file)
 
 	file->private_data = buf;
 
-
  out:
 	return err;
 }
 
 static int brpa3_959042_959218_release(struct inode *inode, struct file *file)
 {
+	printk("Hello from release function");
 	struct buffer *buf = file->private_data;
 
 	buffer_free(buf);
-
+	
 	return 0;
 }
 

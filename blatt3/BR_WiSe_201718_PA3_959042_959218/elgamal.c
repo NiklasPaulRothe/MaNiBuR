@@ -79,5 +79,8 @@ int main (int argc, char **argv) {
 		// Ausgabe der entschlüsselten Zahl
 		printf(c_string);
 		printf("\n");
+
 	}
+	// Schließen der Geräte Datei
+	close(fd);
 }
