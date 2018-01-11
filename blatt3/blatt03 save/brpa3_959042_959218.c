@@ -20,6 +20,11 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Matthias Thien & Niklas Rothe");
 MODULE_DESCRIPTION("Module to decrypt texts");
 
+
+static unsigned long buffer_size = 8192;
+module_param(buffer_size, ulong, (S_IRUSR | S_IRGRP | S_IROTH));
+MODULE_PARM_DESC(buffer_size, "Internal buffer size");
+
 // Ordung p
 static unsigned short order = 59;
 module_param(order, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
@@ -36,7 +41,7 @@ module_param(openkey, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
 static unsigned short openkey_sender = 16;
 module_param(openkey_sender, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
 
-static char msg[100] = {0};
+static char *msg;
 static short readPos = 0;
 static short msg_size = 0;
 static struct mutex lock;
@@ -87,7 +92,7 @@ static ssize_t brpa3_959042_959218_read(struct file *file, char __user * out,
 		goto out_unlock;
 	}
 
-	memset(msg, 0, 100);
+	memset(msg, 0, buffer_size);
 	msg_size = 0;
 
 	out_unlock:
@@ -108,7 +113,7 @@ static ssize_t brpa3_959042_959218_write(struct file *file, const char __user * 
 		goto out;
 	}
 
-	memset(msg, 0, 100);
+	memset(msg, 0, buffer_size);
 	readPos = 0;
 	if (copy_from_user(msg, in, size)) {
 		err = -EFAULT;
@@ -195,20 +200,39 @@ static struct miscdevice brpa3_959042_959218_misc_device = {
     .fops = &brpa3_959042_959218_fops
 };
 
+
+static char* init_msg(unsigned long size) {
+	char* msg = NULL;
+	msg = kzalloc(sizeof(char) * size, GFP_KERNEL);
+	if (unlikely(!msg))
+		goto out;
+	msg_size = size;
+
+	mutex_init(&lock);
+    init_waitqueue_head(&read_queue);
+	return msg;
+
+	out: 
+		return NULL;
+}
+
+static void msg_free(char* msg) {
+	kfree(msg);
+}
+
+
 static int __init brpa3_959042_959218_init(void)
 {
-
     misc_register(&brpa3_959042_959218_misc_device);
     printk(KERN_INFO
         "brpa3_959_042 device has been registered");
-    mutex_init(&lock);
-    init_waitqueue_head(&read_queue);
-
+    msg = init_msg(buffer_size);
     return 0;
 }
 
 static void __exit brpa3_959042_959218_cleanup(void)
-{
+{	
+	msg_free(msg);
 	misc_deregister(&brpa3_959042_959218_misc_device);
     printk(KERN_INFO "Cleaning up module.\n");
 }
