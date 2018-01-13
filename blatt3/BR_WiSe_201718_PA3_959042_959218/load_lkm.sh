@@ -1,4 +1,5 @@
 #!/bin/bash
 
-insmod brpa3_959042_959218.ko buffer_size=2048
-echo 'load done'
+echo 'Skript zum Laden der brpa3_959042_959218.ko gestartet'
+insmod brpa3_959042_959218.ko
+echo 'Skript zum Laden der brpa3_959042_959218.ko beendet'
