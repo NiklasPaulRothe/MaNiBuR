@@ -1,16 +1,16 @@
 
-#include <linux/init.h>		/* __init and __exit macroses */
-#include <linux/kernel.h>	/* KERN_INFO macros */
-#include <linux/module.h>	/* required for all kernel modules */
-#include <linux/moduleparam.h>	/* module_param() and MODULE_PARM_DESC() */
+#include <linux/init.h>     /* __init and __exit macroses */
+#include <linux/kernel.h>   /* KERN_INFO macros */
+#include <linux/module.h>   /* required for all kernel modules */
+#include <linux/moduleparam.h>  /* module_param() and MODULE_PARM_DESC() */
 
-#include <linux/fs.h>		/* struct file_operations, struct file */
-#include <linux/miscdevice.h>	/* struct miscdevice and misc_[de]register() */
-#include <linux/mutex.h>	/* mutexes */
-#include <linux/string.h>	/* memchr() function */
-#include <linux/slab.h>		/* kzalloc() function */
-#include <linux/sched.h>	/* wait queues */
-#include <linux/uaccess.h>	/* copy_{to,from}_user() */
+#include <linux/fs.h>       /* struct file_operations, struct file */
+#include <linux/miscdevice.h>   /* struct miscdevice and misc_[de]register() */
+#include <linux/mutex.h>    /* mutexes */
+#include <linux/string.h>   /* memchr() function */
+#include <linux/slab.h>     /* kzalloc() function */
+#include <linux/sched.h>    /* wait queues */
+#include <linux/uaccess.h>  /* copy_{to,from}_user() */
 
 #include "mod_exp.h"
 #include "brpa3_959042_959218_header.h"
@@ -37,263 +37,247 @@ module_param(openkey, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
 static unsigned short openkey_sender = 16;
 module_param(openkey_sender, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
 
-struct buffer {
-	wait_queue_head_t read_queue;
-	struct mutex lock;
-	char *data, *end;
-	char *read_ptr;
-	unsigned long size;
+struct locks {
+    wait_queue_head_t read_queue;
+    struct mutex lock;
 };
 
-static struct buffer *buffer_alloc(unsigned long size)
-{
-	struct buffer *buf = NULL;
+char msg[100] = {0};
+int msg_size = 0;
 
-	buf = kzalloc(sizeof(*buf), GFP_KERNEL);
-	if (unlikely(!buf))
-		goto out;
 
-	buf->data = kzalloc(size, GFP_KERNEL);
-	if (unlikely(!buf->data))
-		goto out_free;
 
-	init_waitqueue_head(&buf->read_queue);
+static struct locks* queue_lock_init(void)
+{	
 
-	mutex_init(&buf->lock);
+	struct locks *locks = NULL;
+	locks = kzalloc(sizeof(*locks), GFP_KERNEL);
+    if (unlikely(!locks))
+        goto out;
 
-	/* It's unused for now, but may appear useful later */
-	buf->size = size;
+    init_waitqueue_head(&locks->read_queue);
 
- out:
-	return buf;
+    mutex_init(&locks->lock);
 
- out_free:
-	kfree(buf);
-	return NULL;
+    out:
+    	return locks;
 }
 
-static void buffer_free(struct buffer *buffer)
+static void buffer_free(struct locks *locks)
 {
-	kfree(buffer->data);
-	kfree(buffer);
+    kfree(locks);
 }
 
 //Decrypts the given Number
-static int decrypt(struct buffer *buf)
+static int decrypt(int c)
 {
-	int c = 0;
-	int err = kstrtoint(buf->data, 10, &c);
 
-	printk("Secret: %hu", secret);
-	printk("Openkey: %hu", openkey);
+    printk("Secret: %hu", secret);
+    printk("Openkey: %hu", openkey);
 
-	printk("Before Decrypted: %i", c);
-	if (err == 0) {
-		// a*(p-2)
-		int min_one = secret*(order-2);
-		// Formel (2) -   					B ^ a*(p-2) mod p
-		int b_min_one = mod_exp(openkey_sender, min_one, order);
+    printk("Before Decrypted: %i", c);
+    // a*(p-2)
+    int min_one = secret*(order-2);
+    // Formel (2) -                     B ^ a*(p-2) mod p
+    int b_min_one = mod_exp(openkey_sender, min_one, order);
+    // B⁻¹*c
+    c = b_min_one * c;
+    // Formel (1)
+    c = c % order;
+    printk("After Decrypted: %i", c);
 
-		// B⁻¹*c
-		c = b_min_one * c;
-		// Formel (1)
-		c = c % order;
-		printk("After Decrypted: %i", c);
-
-		sprintf(buf->data, "%i", c);
-
-	} else {
-		return -EINVAL;
-	}
-
-	return 0;
+    return c;
 
 }
 
 static ssize_t brpa3_959042_959218_read(struct file *file, char __user * out,
-			    size_t size, loff_t * off)
+                size_t size, loff_t * off)
 {
-	printk("Hello from read function");
-	struct buffer *buf = file->private_data;
-	printk("Inhalt File in Read: %s", buf->data);
-	ssize_t result;
-	//size_t size_store = size;
-	//int count = 0;
+    ssize_t result = 0;
+    struct locks *locks = file->private_data;
+    
+    printk("Hello from read function");
+    printk("Inhalt File in Read: %s", msg);
+    printk("size: %i", size);
+    //Warten bis Mutex frei wird
+    if (mutex_lock_interruptible(&locks->lock)) {
+        result = -ERESTARTSYS;
+        goto out;
+    }
+ 	printk("msg_size: %i",msg_size);
+    if (msg_size == 0) {
+        printk("test1");
+        mutex_unlock(&locks->lock);
+        if (file->f_flags & O_NONBLOCK) {
+            printk("test2");
+            result = -EAGAIN;
+            goto out;
+        }
+        if (wait_event_interruptible
+            (locks->read_queue, msg_size != 0)) {
+            printk("test3");
+            result = -ERESTARTSYS;
+            goto out;
+        }
+        if (mutex_lock_interruptible(&locks->lock)) {
+            printk("test4");
+            result = -ERESTARTSYS;
+            goto out;
+        }
+    } else if (msg_size < 0) {
+    	printk("test");
+    	result = 0;
+    	goto out_unlock;
+    }
 
-	if (mutex_lock_interruptible(&buf->lock)) {
-		result = -ERESTARTSYS;
-		goto out;
-	}
-	while (buf->read_ptr == buf->end) {
-		mutex_unlock(&buf->lock);
-		if (file->f_flags & O_NONBLOCK) {
-			result = -EAGAIN;
-			goto out;
-		}
-		if (wait_event_interruptible
-		    (buf->read_queue, buf->read_ptr != buf->end)) {
-			result = -ERESTARTSYS;
-			goto out;
-		}
-		if (mutex_lock_interruptible(&buf->lock)) {
-			result = -ERESTARTSYS;
-			goto out;
-		}
-	}
+    printk("test5");
+    if (size > 100) {
+	   	size = msg_size;
+    }
+    //Schreiben des Buffer vom Kernel in den UserSpace
+    if (copy_to_user(out, msg, size)) {
+        result = -EFAULT;
+        goto out_unlock;
+    }
 
-	/*while (size_store > 0) {
-		put_user(*buf->read_ptr,out++);
-		size_store--;
-		buf->read_ptr++;
-	}*/
-
-
-	if (copy_to_user(out, buf->read_ptr, size)) {
-		result = -EFAULT;
-		goto out_unlock;
-	}
-
-	// Um Fragmente dieser Berechnung zu verhindern wird hier der Buffer gecleared
-	memset(buf->read_ptr, 0, size);
-
-	buf->read_ptr += size;
-	result = size;
+    //Um Fragmente der hier ausgelesenen Berechnung zu verhindern wird der Buffer gecleared
+    memset(msg, 0, msg_size);
+    result = msg_size;
+    msg_size = -1;
+    printk("size: %i", size);
 
  out_unlock:
-	mutex_unlock(&buf->lock);
+    mutex_unlock(&locks->lock);
  out:
-	return result;
+    printk("Bye from read function");
+    return result;
 }
 
 static ssize_t brpa3_959042_959218_write(struct file *file, const char __user * in,
-			     size_t size, loff_t * off)
+                 size_t size, loff_t * off)
 {
-	printk("Hello from write function");
-	struct buffer *buf = file->private_data;
-	ssize_t result;
-	//int size_store = size;
-	//int x = 0;
+    struct locks *locks = file->private_data;
+    ssize_t result = 0;
+    int c = 0;
+    printk("Hello from write function");
 
+    //Eingaben die Länger als 100Byte sind kann das Programm nicht verabeiten.
+    if (size > 100) {
+        result = -EFBIG;
+        goto out;
+    }
 
+    //Anfordern des Mutex
+    if (mutex_lock_interruptible(&locks->lock)) {
+        result = -ERESTARTSYS;
+        goto out;
+    }
 
-	if (size > buffer_size) {
-		result = -EFBIG;
-		goto out;
-	}
-
-	if (mutex_lock_interruptible(&buf->lock)) {
-		result = -ERESTARTSYS;
-		goto out;
-	}
-
-	/*while(size_store > 0) {
-		buf->data[x] = in[x];
-		x++;
-		size_store--;
-	}*/
-
-
-	if (copy_from_user(buf->data, in, size)) {
-		result = -EFAULT;
-		goto out_unlock;
-	}
-
-	buf->end = buf->data + size;
-	buf->read_ptr = buf->data;
-
-	if (buf->end > buf->data) {
-		decrypt(buf);
-	}
-
-	wake_up_interruptible(&buf->read_queue);
-
-	result = size;
+    //Kopieren der Eingabe aus dem UserSpace
+    if (copy_from_user(msg, in, size)) {
+        result = -EFAULT;
+        goto out_unlock;
+    }
+    //Auswerten der Eingabe
+    msg_size = size;
+    if (msg_size > 0) {
+        //Umwandeln in einen int
+        result = kstrtoint(msg, 10, &c);
+        if (result == 0) {
+            //Entschlüsseln
+            c = decrypt(c);
+            //Löschen des Speichers um zu verhindern das Relikte der Eingabe stehen bleiben
+            memset(msg, 0, 100);
+            //Die entschlüsselte Zahl wieder in den Speicher schreiben
+            sprintf(msg, "%i", c);
+            msg_size = strlen(msg);
+            result = msg_size;
+            wake_up_interruptible(&locks->read_queue);
+        } else {
+            result = -EINVAL;
+        }
+    }
 
  out_unlock:
-	mutex_unlock(&buf->lock);
+    mutex_unlock(&locks->lock);
  out:
-	return result;
+    printk("Bye from write function");
+    return result;
 }
 
-static int brpa3_959042_959218_open(struct inode *inode, struct file *file)
-{
-	printk("Hello from open function");
-	struct buffer *buf;
-	int err = 0;
 
-	/*
-	 * Real code can use inode to get pointer to the private
-	 * device state.
-	 */
-	buf = buffer_alloc(buffer_size);
-	if (unlikely(!buf)) {
-		err = -ENOMEM;
-		goto out;
-	}
-
-	file->private_data = buf;
-
- out:
-	return err;
-}
-
-static int brpa3_959042_959218_release(struct inode *inode, struct file *file)
-{
-	printk("Hello from release function");
-	struct buffer *buf = file->private_data;
-
-	buffer_free(buf);
-
-	return 0;
-}
 
 // updates the secret and openkey
 static int update_keys(unsigned short new_secret) {
-	if (new_secret < 1 || new_secret > order - 1) {
-		return -EINVAL;
-	} else {
-		//secret
-		secret = new_secret;
-		//openkey
-		openkey = mod_exp(generator, secret, order);
-	}
-	return 0;
+    if (new_secret < 1 || new_secret > order - 1) {
+        return -EINVAL;
+    } else {
+        //secret
+        secret = new_secret;
+        //openkey
+        openkey = mod_exp(generator, secret, order);
+    }
+    return 0;
 
 }
 
 // I/O Control
 long brpa3_959042_959218_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
-	brpa3_args variable;
-	switch(cmd)
-	{
-		case BRPA3_SET_SECRET:
-			if (copy_from_user(&variable, (brpa3_args *)arg, sizeof(brpa3_args)))
+    brpa3_args variable;
+    switch(cmd)
+    {
+        case BRPA3_SET_SECRET:
+            if (copy_from_user(&variable, (brpa3_args *)arg, sizeof(brpa3_args)))
             {
                 return -EACCES;
             }
             update_keys(variable.value);
             break;
         case BRPA3_SET_OPENKEY:
-        	if (copy_from_user(&variable, (brpa3_args *)arg, sizeof(brpa3_args)))
+            if (copy_from_user(&variable, (brpa3_args *)arg, sizeof(brpa3_args)))
             {
                 return -EACCES;
             }
             openkey_sender = variable.value;
             break;
         case BRPA3_GET_OPENKEY:
-			variable.value = openkey;
-			if (copy_to_user((brpa3_args *)arg, &variable, sizeof(brpa3_args)))
-			{
-				return -EACCES;
-			}
-			break;
-		default:
-			return -EINVAL;
+            variable.value = openkey;
+            if (copy_to_user((brpa3_args *)arg, &variable, sizeof(brpa3_args)))
+            {
+                return -EACCES;
+            }
+            break;
+        default:
+            return -EINVAL;
+    }
+
+    return 0;
+
+}
+static int brpa3_959042_959218_open(struct inode *inode, struct file *file)
+{
+	struct locks *locks;
+	int err = 0;
+	locks = queue_lock_init();
+	if(unlikely(!locks)){
+		err = -ENOMEM;
+		goto out;
 	}
 
-	return 0;
+	file->private_data = locks;
+	out:
+		return err;
+}
 
+static int brpa3_959042_959218_release(struct inode *inode, struct file *file)
+{
+    struct locks *locks = file->private_data;
+    printk("Hello from release function");
+
+    buffer_free(locks);
+
+    return 0;
 }
 
 static struct file_operations brpa3_959042_959218_fops = {
@@ -314,19 +298,15 @@ static struct miscdevice brpa3_959042_959218_misc_device = {
 
 static int __init brpa3_959042_959218_init(void)
 {
-	if (!buffer_size)
-        return -1;
     misc_register(&brpa3_959042_959218_misc_device);
     printk(KERN_INFO
-        "brpa3_959_042 device has been registered, buffer size is %lu bytes\n",
-        buffer_size);
-
+        "brpa3_959_042 device has been registered\n");
     return 0;   // Non-zero return means that the module couldn't be loaded.
 }
 
 static void __exit brpa3_959042_959218_cleanup(void)
 {
-	misc_deregister(&brpa3_959042_959218_misc_device);
+    misc_deregister(&brpa3_959042_959218_misc_device);
     printk(KERN_INFO "Cleaning up module.\n");
 }
 

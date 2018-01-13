@@ -43,14 +43,17 @@ int multi(int argc, char **argv) {
 	int fd = open("/dev/brpa3_959042_959218", O_RDWR);
 	if (fork()) {
     	/* Parent is the writer */
-	    while (1)
+	    while (1) {
 	    	printf("inserted: %s\n", argv[1]);
 	        write(fd, argv[1], strlen(argv[1]));
+	        sleep(1);
+	    }
 	} else {
     	/* child is the reader */
 	    while (1) {
 	        read(fd, argv[1], strlen(argv[1]));
 	        printf("Read: %s\n", argv[1]);
+	        sleep(1);
 	    }
 	}
 }
