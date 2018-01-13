@@ -20,18 +20,13 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Matthias Thien & Niklas Rothe");
 MODULE_DESCRIPTION("Module to decrypt texts");
 
-
-static unsigned long buffer_size = 8192;
-module_param(buffer_size, ulong, (S_IRUSR | S_IRGRP | S_IROTH));
-MODULE_PARM_DESC(buffer_size, "Internal buffer size");
-
 // Ordung p
 static unsigned short order = 59;
 module_param(order, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
 // Erzeuger g
 static unsigned short generator = 2;
 module_param(generator, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
-// Privater Schlüssel Character Device a
+// Privater Schlüssel Character Device a 
 static unsigned short secret = 5;
 module_param(secret, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
 // Öffentlicher Schlüssel Character Device A
@@ -41,98 +36,67 @@ module_param(openkey, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
 static unsigned short openkey_sender = 16;
 module_param(openkey_sender, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
 
-static char *msg;
+static char msg[100] = {0};
 static short readPos = 0;
-static short msg_size = 0;
-static struct mutex lock;
-static wait_queue_head_t read_queue;
 
 //Decrypts the given Number
-static int decrypt(int c)
-{	
-	// a*(p-2)
-	int min_one = secret*(order-2);
-	// Formel (2) -   					B ^ a*(p-2) mod p
-	int b_min_one = mod_exp(openkey_sender, min_one, order);
-	// B⁻1*c
-	c = b_min_one * c;
-	// Formel (1)
-	c = mod_exp(c, 1, order);	
+static int decrypt(char *msg_in) 
+{
 
-	return c;
+	int c = 0;
+	int err = kstrtoint(msg_in, 10, &c);
+	if (err == 0) {
+		// a*(p-2)
+		int min_one = secret*(order-2);
+		// Formel (2) -   					B ^ a*(p-2) mod p
+		int b_min_one = mod_exp(openkey_sender, min_one, order);
+
+		// B⁻1*c
+		c = b_min_one * c;
+		// Formel (1) 
+		c = mod_exp(c, 1, order);
+
+		sprintf(msg_in, "%i", c);
+
+	} else {
+		return -EINVAL;
+	}
+
+	return 0;
+
 }
 
 
 static ssize_t brpa3_959042_959218_read(struct file *file, char __user * out,
 			    size_t size, loff_t * off)
-{	
-	int err = 0;
-
-	if (mutex_lock_interruptible(&lock)) {
-        err = -ERESTARTSYS;
-        goto out;
+{
+	short count = 0;
+	while(size&&(msg[readPos]!=0)){
+		put_user(msg[readPos],out++);
+		count++;
+		size--;
+		readPos++;
 	}
 
-	printk("msg_size: %hu", msg_size);
-	while (msg_size == 0) {
-		mutex_unlock(&lock);	
-		if (wait_event_interruptible
-		    (read_queue, msg_size != 0)) {
-			err = -ERESTARTSYS;
-			goto out;
-		}
-		if (mutex_lock_interruptible(&lock)) {
-			err = -ERESTARTSYS;
-			goto out;
-		}
-	}
-
-	if (copy_to_user(out, msg, size)) {
-		err = -EFAULT;
-		goto out_unlock;
-	}
-
-	memset(msg, 0, buffer_size);
-	msg_size = 0;
-
-	out_unlock:
-		mutex_unlock(&lock);
-	out:
-		return err;
+	return count;
 }
 
 
 static ssize_t brpa3_959042_959218_write(struct file *file, const char __user * in,
 			     size_t size, loff_t * off)
 {
-	int err = 0;
-	int c = 0;
-
-	if (mutex_lock_interruptible(&lock)) {
-		err = -ERESTARTSYS;
-		goto out;
-	}
-
-	memset(msg, 0, buffer_size);
+	short ind = 0;
+	short count = 0;
+	memset(msg, 0, 100);
 	readPos = 0;
-	if (copy_from_user(msg, in, size)) {
-		err = -EFAULT;
-		goto out_unlock;
+	while(size > 0){
+		msg[count++] = in[ind++];
+		size--;
 	}
 
-	err = kstrtoint(msg, 10, &c);
-	if (err == 0) {
-		c = decrypt(c);
-		sprintf(msg, "%i", c);
-		msg_size = size;
-	}
+	decrypt(msg);
 
-	wake_up_interruptible(&read_queue);
-
-	out_unlock:
-		mutex_unlock(&lock);
-	out:
-		return err;
+	return count;
 }
 
 // updates the secret and openkey
@@ -153,7 +117,7 @@ static int update_keys(unsigned short new_secret) {
 
 // I/O Control
 long brpa3_959042_959218_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
-{
+{	
 	brpa3_args variable;
 	switch(cmd)
 	{
@@ -163,14 +127,12 @@ long brpa3_959042_959218_ioctl(struct file *f, unsigned int cmd, unsigned long a
                 return -EACCES;
             }
             update_keys(variable.value);
-            break;
         case BRPA3_SET_OPENKEY:
         	if (copy_from_user(&variable, (brpa3_args *)arg, sizeof(brpa3_args)))
             {
                 return -EACCES;
             }
             openkey_sender = variable.value;
-            break;
         case BRPA3_GET_OPENKEY:
 			variable.value = openkey;
 			if (copy_to_user((brpa3_args *)arg, &variable, sizeof(brpa3_args)))
@@ -200,39 +162,18 @@ static struct miscdevice brpa3_959042_959218_misc_device = {
     .fops = &brpa3_959042_959218_fops
 };
 
-
-static char* init_msg(unsigned long size) {
-	char* msg = NULL;
-	msg = kzalloc(sizeof(char) * size, GFP_KERNEL);
-	if (unlikely(!msg))
-		goto out;
-	msg_size = size;
-
-	mutex_init(&lock);
-    init_waitqueue_head(&read_queue);
-	return msg;
-
-	out: 
-		return NULL;
-}
-
-static void msg_free(char* msg) {
-	kfree(msg);
-}
-
-
 static int __init brpa3_959042_959218_init(void)
-{
+{	
+
     misc_register(&brpa3_959042_959218_misc_device);
     printk(KERN_INFO
         "brpa3_959_042 device has been registered");
-    msg = init_msg(buffer_size);
+
     return 0;
 }
 
 static void __exit brpa3_959042_959218_cleanup(void)
 {	
-	msg_free(msg);
 	misc_deregister(&brpa3_959042_959218_misc_device);
     printk(KERN_INFO "Cleaning up module.\n");
 }

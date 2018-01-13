@@ -20,9 +20,6 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Matthias Thien & Niklas Rothe");
 MODULE_DESCRIPTION("Module to decrypt positive numbers with the elgamal algorithm");
 
-static unsigned long buffer_size = 8192;
-module_param(buffer_size, ulong, (S_IRUSR | S_IRGRP | S_IROTH));
-MODULE_PARM_DESC(buffer_size, "Internal buffer size");
 
 // Ordung p
 static unsigned short order = 59;
@@ -30,7 +27,7 @@ module_param(order, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
 // Erzeuger g
 static unsigned short generator = 2;
 module_param(generator, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
-// Privater Schlüssel Character Device a 
+// Privater Schlüssel Character Device a
 static unsigned short secret = 5;
 module_param(secret, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
 // Öffentlicher Schlüssel Character Device A
@@ -82,7 +79,7 @@ static void buffer_free(struct buffer *buffer)
 }
 
 //Decrypts the given Number
-static int decrypt(struct buffer *buf) 
+static int decrypt(struct buffer *buf)
 {
 	int c = 0;
 	int err = kstrtoint(buf->data, 10, &c);
@@ -99,7 +96,7 @@ static int decrypt(struct buffer *buf)
 
 		// B⁻¹*c
 		c = b_min_one * c;
-		// Formel (1) 
+		// Formel (1)
 		c = c % order;
 		printk("After Decrypted: %i", c);
 
@@ -119,7 +116,7 @@ static ssize_t brpa3_959042_959218_read(struct file *file, char __user * out,
 	printk("Hello from read function");
 	struct buffer *buf = file->private_data;
 	printk("Inhalt File in Read: %s", buf->data);
-	ssize_t result;	
+	ssize_t result;
 	//size_t size_store = size;
 	//int count = 0;
 
@@ -165,7 +162,7 @@ static ssize_t brpa3_959042_959218_read(struct file *file, char __user * out,
  out_unlock:
 	mutex_unlock(&buf->lock);
  out:
-	return result; 
+	return result;
 }
 
 static ssize_t brpa3_959042_959218_write(struct file *file, const char __user * in,
@@ -246,7 +243,7 @@ static int brpa3_959042_959218_release(struct inode *inode, struct file *file)
 	struct buffer *buf = file->private_data;
 
 	buffer_free(buf);
-	
+
 	return 0;
 }
 
@@ -258,7 +255,7 @@ static int update_keys(unsigned short new_secret) {
 		//secret
 		secret = new_secret;
 		//openkey
-		openkey = mod_exp(generator, secret, order);		
+		openkey = mod_exp(generator, secret, order);
 	}
 	return 0;
 
@@ -266,7 +263,7 @@ static int update_keys(unsigned short new_secret) {
 
 // I/O Control
 long brpa3_959042_959218_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
-{	
+{
 	brpa3_args variable;
 	switch(cmd)
 	{
@@ -316,7 +313,7 @@ static struct miscdevice brpa3_959042_959218_misc_device = {
 };
 
 static int __init brpa3_959042_959218_init(void)
-{	
+{
 	if (!buffer_size)
         return -1;
     misc_register(&brpa3_959042_959218_misc_device);
@@ -328,7 +325,7 @@ static int __init brpa3_959042_959218_init(void)
 }
 
 static void __exit brpa3_959042_959218_cleanup(void)
-{	
+{
 	misc_deregister(&brpa3_959042_959218_misc_device);
     printk(KERN_INFO "Cleaning up module.\n");
 }
