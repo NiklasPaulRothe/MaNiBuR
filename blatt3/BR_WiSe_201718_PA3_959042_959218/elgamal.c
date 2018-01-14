@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <stdlib.h>
 
 #include "brpa3_959042_959218_header.h"
 #include "mod_exp.h"
@@ -23,13 +24,13 @@ int main (int argc, char **argv) {
 	secret = 9;
 	openkey = mod_exp(generator, secret, order);
 	// Erstellen des Objekts für den ioctl()-Befehl SET_SECRET
-	brpa3_args io_secret;
-	io_secret.value = secret;
+	brpa3_args *io_secret = malloc(sizeof(brpa3_args));
+	io_secret->value = secret;
 	// Setzen des Secret Values
 	if (ioctl(fd, BRPA3_SET_SECRET, &io_secret) == -1) {
 		perror("ioctl()-Error at SET_SECRET");
 	}
-	
+	free(io_secret);
 	// Erstellen des Objekts für den ioctl()-Befehl GET_OPENKEY
 	brpa3_args io_open;
 
@@ -60,13 +61,18 @@ int main (int argc, char **argv) {
 		printf("\t%lu\t - ", c);
 
 		// Erstellen eines Buffers und Konvertierung von c in einen String
+		// Erhalten der Anzahl der benötigten Character für die Zahl 
 		const int n = snprintf(NULL, 0, "%lu", c);
-		char c_string[n+1];
+		// Array um eine Stelle größer machen, falls die entschlüsselte Zahl 
+		// um eine Stelle größer ist.
+		char c_string[n+2];
+		// Array initialisieren
+		memset(c_string, 0, n+2);
+		// c in das Array schreiben
 		snprintf(c_string, n+1, "%lu", c);
-		c_string[n] = '\0';
 
 		// Übergeben des Strings an das Modul und lesen der entschlüsselten Zahl
-		write(fd, c_string, strlen(c_string));
+		write(fd, c_string, strlen(c_string) + 1);
 		read(fd, c_string, strlen(c_string) + 1);
 
 		// Ausgabe der entschlüsselten Zahl
