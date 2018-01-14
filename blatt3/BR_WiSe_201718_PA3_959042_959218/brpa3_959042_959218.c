@@ -21,9 +21,12 @@ MODULE_DESCRIPTION("Module to decrypt positive numbers with the elgamal algorith
 
 //Parameter für den Elgamal Algorithmus können beim Starten des Kernel frei gesetzt werden
 //Ein Aufruf würde wir folgt aussehen:
-//	insmod brpa3_959042_959218.ko order=50 secret = 9
+//	insmod brpa3_959042_959218.ko buffer_size=50 secret = 9
 //usw.
 
+//Größe des Speichers für die Zahl
+static unsigned short buffer_size = 16;
+module_param(buffer_size, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
 // Ordung p
 static unsigned short order = 59;
 module_param(order, ushort, (S_IRUSR | S_IRGRP | S_IROTH));
@@ -47,7 +50,7 @@ struct locks {
 };
 
 //msg dient als Speicher für die Eingehende Zahl
-char msg[100] = {0};
+char *msg;
 //msg_size gibt an wie lang (wie viele Stellen) sie hat
 int msg_size = 0;
 
@@ -59,7 +62,6 @@ static struct locks* queue_lock_init(void)
 	locks = kzalloc(sizeof(*locks), GFP_KERNEL);
     if (unlikely(!locks))
         goto out;
-
     init_waitqueue_head(&locks->read_queue);
 
     mutex_init(&locks->lock);
@@ -69,26 +71,9 @@ static struct locks* queue_lock_init(void)
 }
 
 //Free'd den Speicher der Locks wieder
-static void buffer_free(struct locks *locks)
+static void queue_lock_exit(struct locks *locks)
 {
     kfree(locks);
-}
-
-//Entschlüsselt eine gegebene Zahl anhand des Elgamal Algorithmus
-//Dazu werden die Globalen Parameter genutzt
-static int decrypt(int c)
-{
-    // a*(p-2)
-    int min_one = secret*(order-2);
-    // Formel (2) -                     B ^ a*(p-2) mod p
-    int b_min_one = mod_exp(openkey_sender, min_one, order);
-    // B⁻¹*c
-    c = b_min_one * c;
-    // Formel (1)
-    c = c % order;
-
-    return c;
-
 }
 
 //Read Methode wird aufgerufen sobald jemand vom Device (/dev/brpa3_959042_959218) lesen möchte
@@ -132,9 +117,9 @@ static ssize_t elgamal_read(struct file *file, char __user * out,
         }
     } 
 
-    //Durch die Konstante Array Größe von msg darf size nicht größer 100 sein
+    //Durch die Konstante Array Größe von msg darf size nicht größer buffer_size sein
     //(cat benutzt zB eine größere size)
-    if (size > 100) {
+    if (size > buffer_size) {
 	   	size = msg_size;
     }
     //Schreiben des Buffer vom Kernel in den UserSpace
@@ -146,13 +131,29 @@ static ssize_t elgamal_read(struct file *file, char __user * out,
     //Um Fragmente der hier ausgelesenen Berechnung zu verhindern wird der Buffer gecleared
     memset(msg, 0, msg_size);
     result = msg_size;
-    //-1 Wird gesetzt, damit zB cat nicht endlos weiter lesen kann (Abgefangen weiter oben)
+    //-1 Wird gesetzt, damit zB cat nicht endlos weiter ließt kann (Abgefangen weiter oben)
     msg_size = -1;
 
  out_unlock:
     mutex_unlock(&locks->lock);
  out:
     return result;
+}
+
+//Entschlüsselt eine gegebene Zahl anhand des Elgamal Algorithmus
+//Dazu werden die Globalen Parameter genutzt
+static int decrypt(int c)
+{
+    // a*(p-2)
+    int min_one = secret*(order-2);
+    // Formel (2) -                     B ^ a*(p-2) mod p
+    int b_min_one = mod_exp(openkey_sender, min_one, order);
+    // B⁻¹*c
+    c = b_min_one * c;
+    // Formel (1)
+    c = c % order;
+
+    return c;
 }
 
 //Die write Methode wird aufgerufen wenn ein Programm in das Device schreiben 
@@ -165,9 +166,8 @@ static ssize_t elgamal_write(struct file *file, const char __user * in,
     ssize_t result = 0;
     int c = 0;
 
-    //Eingaben die Länger als 100 sind kann das Programm auf Grund der festen 
-    //Größe von msg nicht verabeiten.
-    if (size > 100) {
+    //Eingaben die Länger als buffer_size sind kann das Modul zur Laufzeit nicht verarbeiten
+    if (size > buffer_size) {
         result = -EFBIG;
         goto out;
     }
@@ -209,8 +209,6 @@ static ssize_t elgamal_write(struct file *file, const char __user * in,
     return result;
 }
 
-
-
 //Aktualisiert anhand des neuen secret Wertes auch den openkey
 static int update_keys(unsigned short new_secret) {
     if (new_secret < 1 || new_secret > order - 1) {
@@ -222,7 +220,6 @@ static int update_keys(unsigned short new_secret) {
         openkey = mod_exp(generator, secret, order);
     }
     return 0;
-
 }
 
 // I/O Control
@@ -263,7 +260,6 @@ long elgamal_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
     }
 
     return 0;
-
 }
 
 //Open Methode wird aufgerufen wenn das Device geöffnet wird
@@ -278,7 +274,7 @@ static int elgamal_open(struct inode *inode, struct file *file)
 		err = -ENOMEM;
 		goto out;
 	}
-	//Speicher diese im Device 
+	//Speicher diese im Device 	
 	file->private_data = locks;
 	out:
 		return err;
@@ -290,7 +286,7 @@ static int elgamal_release(struct inode *inode, struct file *file)
 	//Holt sich die Locks
     struct locks *locks = file->private_data;
     //Gibt Speicher wieder frei
-    buffer_free(locks);
+    queue_lock_exit(locks);
 
     return 0;
 }
@@ -316,11 +312,17 @@ static int __init elgamal_init(void)
     misc_register(&elgamal_misc_device);
     printk(KERN_INFO
         "brpa3_959_042 device has been registered.\n");
+    msg = kzalloc(sizeof(char)*buffer_size, GFP_KERNEL);
+    if (unlikely(!msg)) {
+    	return -1;
+    }
+    msg_size = 0;
     return 0;   
 }
 
 static void __exit elgamal_cleanup(void)
-{
+{	
+	kfree(msg);
     misc_deregister(&elgamal_misc_device);
     printk(KERN_INFO "Cleaning up module.\n");
 }
