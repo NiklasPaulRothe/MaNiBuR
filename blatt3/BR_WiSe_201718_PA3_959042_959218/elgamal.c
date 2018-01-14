@@ -27,7 +27,7 @@ int main (int argc, char **argv) {
 	brpa3_args *io_secret = malloc(sizeof(brpa3_args));
 	io_secret->value = secret;
 	// Setzen des Secret Values
-	if (ioctl(fd, BRPA3_SET_SECRET, &io_secret) == -1) {
+	if (ioctl(fd, BRPA3_SET_SECRET, io_secret) == -1) {
 		perror("ioctl()-Error at SET_SECRET");
 	}
 	free(io_secret);
