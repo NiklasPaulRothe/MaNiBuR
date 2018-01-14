@@ -58,18 +58,18 @@ int main (int argc, char **argv) {
 		first = first * m;
 		c = first % order;
 
-		printf("\t%lu\t - ", c);
+		printf("\t%hu\t - ", c);
 
 		// Erstellen eines Buffers und Konvertierung von c in einen String
 		// Erhalten der Anzahl der benötigten Character für die Zahl 
-		const int n = snprintf(NULL, 0, "%lu", c);
+		const int n = snprintf(NULL, 0, "%hu", c);
 		// Array um eine Stelle größer machen, falls die entschlüsselte Zahl 
 		// um eine Stelle größer ist.
 		char c_string[n+2];
 		// Array initialisieren
 		memset(c_string, 0, n+2);
 		// c in das Array schreiben
-		snprintf(c_string, n+1, "%lu", c);
+		snprintf(c_string, n+1, "%hu", c);
 
 		// Übergeben des Strings an das Modul und lesen der entschlüsselten Zahl
 		write(fd, c_string, strlen(c_string) + 1);
